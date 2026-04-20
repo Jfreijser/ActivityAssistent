@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="ActivityAssistent.Api/ActivityAssistent.Api.csproj" />
+  <Project Path="ActivityAssistent.App/ActivityAssistent.App.csproj" />
+  <Project Path="ActivityAssistent.Shared/ActivityAssistent.Shared.csproj" />
+</Solution>

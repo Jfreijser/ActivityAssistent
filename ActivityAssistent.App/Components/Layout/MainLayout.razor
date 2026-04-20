@@ -1,0 +1,54 @@
+﻿@inherits LayoutComponentBase
+
+@* We koppelen de IsDarkMode property aan de provider *@
+<MudThemeProvider @bind-IsDarkMode="@IsDarkMode" Theme="AppTheme" DefaultScrollbar="true" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1" Color="Color.Surface">
+        <MudText Typo="Typo.h6" Color="Color.Primary" Class="ml-3">Activity Assistent</MudText>
+        <MudSpacer />
+        @* De knop om te wisselen tussen licht en donker *@
+        <MudIconButton Icon="@(IsDarkMode? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                       Color="@(IsDarkMode ? Color.Warning : Color.Default)"
+                       OnClick="@ToggleTheme" />
+    </MudAppBar>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    // PascalCase variabelen
+    private bool IsDarkMode { get; set; } = true; // We zetten hem standaard op true zoals je wilde
+
+    private void ToggleTheme()
+    {
+        IsDarkMode = !IsDarkMode;
+    }
+
+    private MudTheme AppTheme = new MudTheme()
+    {
+        // Kleuren voor de normale (Light) modus
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#2ECC71",         // Hetzelfde groen
+            AppbarBackground = "#FFFFFF",
+            Background = "#F8F9FA",      // Lichtgrijze achtergrond
+            Surface = "#FFFFFF",
+            TextPrimary = "#2D3436"      // Donkergrijze tekst
+        },
+        // Kleuren voor de Dark modus
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#2ECC71",         // Hetzelfde groen
+            Background = "#1A1A27",
+            Surface = "#1E1E2D",
+            AppbarBackground = "#1A1A27",
+            TextPrimary = "#E0E0E0"
+        }
+    };
+}
