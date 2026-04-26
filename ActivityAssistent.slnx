@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="ActivityAssistent.Api/ActivityAssistent.Api.csproj" />
-  <Project Path="ActivityAssistent.App/ActivityAssistent.App.csproj" />
+  <Project Path="ActivityAssistent.App/ActivityAssistent.App.csproj" Id="a69f8349-9ac3-4919-9102-a9109db3c6d0" />
   <Project Path="ActivityAssistent.Shared/ActivityAssistent.Shared.csproj" />
+  <Project Path="ActivityAssistent.Web/ActivityAssistent.Web.csproj" Id="9510a9e6-5338-4028-8edf-7d9b8b48e40d" />
 </Solution>

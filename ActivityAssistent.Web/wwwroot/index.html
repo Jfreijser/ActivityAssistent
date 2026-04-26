@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Activity Assistent</title>
+    <base href="/" />
+    <link href="ActivityAssistent.Web.styles.css" rel="stylesheet" />
+
+    <!-- MudBlazor vereenvoudigde setup -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+</head>
+<body>
+    <div id="app">
+        <style>
+            .loading-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                background-color: #0D1F2D; /* Jouw OffBlack kleur */
+                color: #1DB954; /* Jouw Spotify Groen */
+                font-family: 'Roboto', sans-serif;
+            }
+
+            .spinner {
+                border: 4px solid rgba(29, 185, 84, 0.1);
+                width: 42px;
+                height: 42px;
+                border-radius: 50%;
+                border-left-color: #1DB954;
+                animation: spin 1s linear infinite;
+                margin-bottom: 10px;
+            }
+
+            @keyframes spin {
+                0% {
+                    transform: rotate(0deg);
+                }
+
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+        </style>
+
+        <div class="loading-container">
+            <div class="spinner"></div>
+            <p>Activity Assistant wordt geladen...</p>
+        </div>
+    </div>
+
+    <!-- Blazor foutmeldingen UI -->
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+    <script src="_framework/blazor.webassembly.js"></script>
+    <!-- MudBlazor script -->
+    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+</body>
+</html>

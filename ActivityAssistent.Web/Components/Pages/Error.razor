@@ -1,0 +1,14 @@
+﻿@page "/error"
+@using MudBlazor
+@using ActivityAssistent.Web.Services
+@inject IErrorService ErrorService
+
+<PageTitle>Error</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" style="margin-top: 50px;">
+    <MudAlert Severity="Severity.Error" Variant="Variant.Filled">
+        <h2>Oops! Something went wrong</h2>
+        <p>@ErrorService.LastError</p>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/">Go Home</MudButton>
+    </MudAlert>
+</MudContainer>

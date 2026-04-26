@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <Color x:Key="Primary">#1DB954</Color>
+    <Color x:Key="PrimaryDark">#1ed760</Color>
+    <Color x:Key="PrimaryDarkText">#191414</Color>
+
+    <Color x:Key="MidnightBlue">#0D1F2D</Color>
+    <Color x:Key="DarkBlueTint">#1A3A52</Color>
+    <Color x:Key="LightBlueTint">#2D5A7B</Color>
+
+    <Color x:Key="DarkBackground">#0D1F2D</Color>
+    <Color x:Key="OffBlack">#0D1F2D</Color>
+
+    <Color x:Key="DarkSecondaryBackground">#1A3A52</Color>
+    <Color x:Key="LightSecondaryBackground">#2D5A7B</Color>
+
+    <Color x:Key="LightOnDarkBackground">#E0E0E0</Color>
+    <Color x:Key="SecondaryText">#94A3B8</Color>
+
+    <Color x:Key="White">#FFFFFF</Color>
+    <Color x:Key="Black">#000000</Color>
+
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Primary}"/>
+    <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource DarkBackground}"/>
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource DarkSecondaryBackground}"/>
+    <SolidColorBrush x:Key="TextBrush" Color="{StaticResource LightOnDarkBackground}"/>
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="{StaticResource SecondaryText}"/>
+
+</ResourceDictionary>

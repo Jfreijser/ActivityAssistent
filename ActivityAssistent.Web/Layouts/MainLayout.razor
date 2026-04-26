@@ -1,0 +1,67 @@
+@inherits LayoutComponentBase
+@using MudBlazor
+@using ActivityAssistent.Web.Services
+@inject IThemeService ThemeService
+
+<MudThemeProvider Theme="@ActivityAssistantTheme" IsDarkMode="@IsDarkMode" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1" Color="Color.Surface">
+        <MudText Typo="Typo.h6" Color="Color.Primary">Activity Assistant</MudText>
+        <MudSpacer />
+        <MudIconButton Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                       OnClick="ToggleDarkMode"
+                       Color="Color.Inherit" />
+    </MudAppBar>
+    
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-4 pt-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool IsDarkMode = true;
+
+    // Definitie van het thema met de Spotify-kleuren uit je MAUI-project
+    private MudTheme ActivityAssistantTheme = new MudTheme()
+    {
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#1DB954",        // Spotify Groen
+            PrimaryDarken = "#1ed760",
+            Secondary = "#1A3A52",      // Donkerblauw tint
+            Tertiary = "#0D1F2D",       // Midnight Blue
+            Background = "#0F0F0F",     // OffBlack
+            Surface = "#1A1A1E",        // Dark Secondary Background
+            AppbarBackground = "#0F0F0F",
+            TextPrimary = "#E0E0E0",    // LightOnDark
+            TextSecondary = "#A9A9A9"   // Gray600
+        },
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#1DB954",
+            Secondary = "#1A3A52",
+            Background = "#F5F5F5",
+            Surface = "#FFFFFF",
+            AppbarBackground = "#FFFFFF",
+            TextPrimary = "#191414",    // PrimaryDarkText
+            TextSecondary = "#545454"
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        // De service geeft nu alleen nog de status terug
+        IsDarkMode = await ThemeService.IsDarkModeAsync();
+    }
+
+    private async Task ToggleDarkMode()
+    {
+        IsDarkMode = !IsDarkMode;
+        await ThemeService.SetDarkModeAsync(IsDarkMode);
+    }
+}

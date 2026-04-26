@@ -1,0 +1,79 @@
+﻿@inherits LayoutComponentBase
+@using MudBlazor
+@using ActivityAssistent.Web.Services
+@inject IThemeService ThemeService
+
+<MudThemeProvider Theme="@ActivityAssistantTheme" IsDarkMode="@IsDarkMode" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    
+    <MudAppBar Elevation="1" Color="Color.Surface">
+        <MudText Typo="Typo.h6" Color="Color.Primary">Activity Assistant</MudText>
+        <MudSpacer />
+        <MudIconButton Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                       OnClick="ToggleDarkMode"
+                       Color="Color.Inherit" />
+    </MudAppBar>
+    
+    <MudDrawer ClipMode="DrawerClipMode.Always" Elevation="2">
+        <NavMenu />
+    </MudDrawer>
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-4 pt-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+
+</MudLayout>
+
+@code {
+    // Variabele in PascalCase volgens afspraak
+    private bool IsDarkMode = true;
+
+    // Jouw MAUI XAML kleuren, netjes vertaald naar een C# object
+    private MudTheme ActivityAssistantTheme = new MudTheme()
+    {
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#1DB954",           // Jouw kenmerkende groen
+            PrimaryDarken = "#1ed760",
+            Secondary = "#64B5F6",         // Een lichtere blauwe tint voor accenten
+            Tertiary = "#1DB954",
+        
+            // De diepte-laagjes:
+            Background = "#0D1F2D",        // Diep donkerblauw (was OffBlack)
+            Surface = "#1A3A52",           // Iets lichter blauw voor kaarten/menu's
+            AppbarBackground = "#162C3E",  // Tussenliggende tint voor de bovenbalk
+            DrawerBackground = "#1A3A52",  // Gelijk aan Surface voor rust
+        
+            // Tekst en Details
+            TextPrimary = "#E0E0E0",       // Zacht wit (minder fel dan puur wit)
+            TextSecondary = "#94A3B8",     // Blauw-grijs voor minder belangrijke tekst
+            ActionDefault = "#94A3B8",
+            LinesDefault = "#334155"        // Subtiele lijntjes voor scheiding
+        },
+        PaletteLight = new PaletteLight()
+        {
+            // De lichte variant laten we fris
+            Primary = "#1DB954",
+            Background = "#F8FAFC",
+            Surface = "#FFFFFF",
+            AppbarBackground = "#FFFFFF",
+            TextPrimary = "#0F172A"
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        IsDarkMode = await ThemeService.IsDarkModeAsync();
+    }
+
+    private async Task ToggleDarkMode()
+    {
+        IsDarkMode = !IsDarkMode;
+        await ThemeService.SetDarkModeAsync(IsDarkMode);
+    }
+}
