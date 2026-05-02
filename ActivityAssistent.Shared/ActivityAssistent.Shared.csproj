@@ -14,10 +14,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Dtos\Audio\" />
     <Folder Include="Dtos\Common\" />
     <Folder Include="Dtos\Events\" />
-    <Folder Include="Dtos\Identity\" />
-    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>
