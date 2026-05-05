@@ -8,12 +8,12 @@ namespace ActivityAssistent.Shared.Interfaces.ActionPoint
     public interface IActionPointService
     {
         // Ophalen van alle openstaande actiepunten voor een medewerker
-        Task<IEnumerable<ActionPointDto>> GetPendingActionPointsAsync(string UserId);
+        Task<IEnumerable<ActionPointDto>> GetActiveActionPointsAsync(string UserId, CancellationToken Token);
 
         // Een actiepunt bewerken (bijvoorbeeld afvinken als voltooid)
-        Task<ActionPointDto> UpdateActionPointAsync(ActionPointDto UpdatedActionPoint);
+        Task<ActionPointDto> UpdateActionPointAsync(ActionPointDto UpdatedActionPoint, CancellationToken Token);
 
         // Een actiepunt verwijderen
-        Task DeleteActionPointAsync(string ActionPointId);
+        Task DeleteActionPointAsync(Guid ActionPointId, CancellationToken Token);
     }
 }

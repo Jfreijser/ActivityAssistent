@@ -7,7 +7,8 @@ namespace ActivityAssistent.Shared.Interfaces.Ai
 {
     public  interface IAiMeetingAnalyzer
     {
-        Task<MeetingAnalysisResultDto> AnalyzeMeetingAsync(AudioProcessingRequestDto RequestPayload);
+        Task<MeetingAnalysisResultDto> AnalyzeMeetingAsync(AudioProcessingRequestDto RequestPayload, CancellationToken Token);
+        
     }
 }
 
