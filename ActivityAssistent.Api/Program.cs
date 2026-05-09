@@ -1,4 +1,6 @@
 using ActivityAssistent.Api.Configuration;
+using ActivityAssistent.Api.Infrastructure;
+using ActivityAssistent.Api.Infrastructure.Repositories;
 using ActivityAssistent.Api.Services;
 using ActivityAssistent.Api.Services.Conversations;
 using ActivityAssistent.Shared.Interfaces.Conversations;
@@ -30,12 +32,23 @@ builder.Services.AddSingleton<IOrganizationServiceAsync>(ServiceProvider =>
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
-
-
+string MyAllowSpecificOrigins = "MyCorsPolicy";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowSpecificOrigins,
+        policy =>
+        {
+            policy.WithOrigins("https://localhost:7999", "https://localhost:7000") // Voeg hier de URL van je frontend toe
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
 
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-
+builder.Services.AddScoped<IUserContext, UserContext>();
+builder.Services.AddScoped<IUserRepository, DataverseUserRepository>();
+builder.Services.AddSwaggerGen();
 
 // Add services to the container.
 
@@ -49,9 +62,16 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
+
+app.UseRouting();
+
+app.UseCors(MyAllowSpecificOrigins);
+app.UseAuthentication();
 
 app.UseAuthorization();
 

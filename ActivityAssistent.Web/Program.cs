@@ -15,7 +15,7 @@ builder.Services.AddScoped(sp => new HttpClient
 });
 builder.Services.AddHttpClient<IAuthService, WebAuthService>(Client =>
 {
-    Client.BaseAddress = new Uri("https://localhost:7123/");
+    Client.BaseAddress = new Uri("https://localhost:7230/");
 });
 
 // MudBlazor Services
