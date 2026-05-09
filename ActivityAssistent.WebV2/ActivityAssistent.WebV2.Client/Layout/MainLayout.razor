@@ -1,0 +1,70 @@
+﻿@inherits LayoutComponentBase
+@using MudBlazor
+@using ActivityAssistent.WebV2.Client.Services
+@inject IThemeService ThemeService
+
+<MudThemeProvider Theme="@ActivityAssistantTheme" IsDarkMode="@IsDarkMode" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1" Color="Color.Surface">
+        <MudText Typo="Typo.h6" Color="Color.Primary">Activity Assistant</MudText>
+        <MudSpacer />
+        <MudIconButton Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                       OnClick="ToggleDarkMode"
+                       Color="Color.Inherit" />
+    </MudAppBar>
+    
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-4 pt-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool IsDarkMode = true;
+
+    // Definitie van het thema met de Spotify-kleuren uit je MAUI-project
+    private MudTheme ActivityAssistantTheme = new MudTheme()
+    {
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#1DB954",        // Spotify Groen
+            PrimaryDarken = "#1ed760",
+            Secondary = "#1A3A52",
+            Tertiary = "#1A1A1E",
+            Background = "#0D1F2D",     // <-- Hier je donkerblauwe kleur gezet!
+            Surface = "#1A3A52",        // <-- Maakt kaarten/vlakken een lichtere tint blauw
+            AppbarBackground = "#0D1F2D", // <-- Bovenste balk ook donkerblauw
+            TextPrimary = "#E0E0E0",
+            TextSecondary = "#A9A9A9"
+        },
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#1DB954",
+            Secondary = "#1A3A52",
+            Background = "#F5F5F5",
+            Surface = "#FFFFFF",
+            AppbarBackground = "#FFFFFF",
+            TextPrimary = "#191414",
+            TextSecondary = "#545454"
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        // De service geeft nu alleen nog de status terug
+        IsDarkMode = await ThemeService.IsDarkModeAsync();
+    }
+
+    public async Task ToggleDarkMode()
+    {
+        IsDarkMode = !IsDarkMode;
+        await ThemeService.SetDarkModeAsync(IsDarkMode);
+        
+        // Vertel Blazor dat de variabelen zijn aangepast en hij opnieuw moet tekenen!
+        StateHasChanged();
+    }
+}
