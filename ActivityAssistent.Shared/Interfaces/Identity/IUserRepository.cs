@@ -8,5 +8,7 @@ namespace ActivityAssistent.Shared.Interfaces.Identity
     public interface IUserRepository
     {
         Task<UserProfileDto?> GetProfileByIdAsync(Guid UserId, CancellationToken Token = default);
+        Task<UserAuthDto?> GetUserForLoginByEmailAsync(string Email, CancellationToken Token = default);
     }
+
 }

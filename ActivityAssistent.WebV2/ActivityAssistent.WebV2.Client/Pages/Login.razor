@@ -1,0 +1,80 @@
+﻿@page "/login"
+@using ActivityAssistent.Shared.Dtos.Identity
+@using ActivityAssistent.Shared.Interfaces.Identity
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudCard Elevation="4" Class="pa-4">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h5" Align="Align.Center" Color="Color.Primary">SalesAssistant Login</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        
+        <MudCardContent>
+            <MudTextField @bind-Value="Email" Label="E-mailadres" Variant="Variant.Outlined" Class="mb-4" />
+            <MudTextField @bind-Value="Password" Label="Wachtwoord" Variant="Variant.Outlined" InputType="InputType.Password" Class="mb-4" />
+            
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <MudText Color="Color.Error" Typo="Typo.body2" Class="mb-2">@ErrorMessage</MudText>
+            }
+        </MudCardContent>
+        
+        <MudCardActions Class="d-flex justify-center pb-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleLogin" Disabled="@IsLoading" Size="Size.Large" FullWidth="true">
+                @if (IsLoading)
+                {
+                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                    <MudText Class="ms-2">Laden...</MudText>
+                }
+                else
+                {
+                    <MudText>Inloggen</MudText>
+                }
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private string Email { get; set; } = string.Empty;
+    private string Password { get; set; } = string.Empty;
+    private string ErrorMessage { get; set; } = string.Empty;
+    private bool IsLoading { get; set; } = false;
+    protected override async Task OnInitializedAsync()
+    {
+        bool test = true;
+    }
+    private async Task HandleLogin()
+    {
+        ErrorMessage = string.Empty;
+        IsLoading = true;
+
+        try
+        {
+            // Hier roepen we straks jouw AuthService aan!
+            LoginCredentialsDto login = new LoginCredentialsDto
+            {
+                Email = Email,
+                Password = Password
+			};  
+            var result = await AuthService.LoginAsync(login, default);
+            
+            // Simuleer even een laadtijd om de spinner te zien
+            await Task.Delay(1000);
+
+            // Als het succesvol is, sturen we de gebruiker naar de Home pagina
+            NavigationManager.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Inloggen mislukt: " + ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+}

@@ -7,16 +7,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Dtos\Audio\**" />
+    <Compile Remove="Dtos\Common\**" />
+    <Compile Remove="Dtos\Events\**" />
+    <EmbeddedResource Remove="Dtos\Audio\**" />
+    <EmbeddedResource Remove="Dtos\Common\**" />
+    <EmbeddedResource Remove="Dtos\Events\**" />
+    <None Remove="Dtos\Audio\**" />
+    <None Remove="Dtos\Common\**" />
+    <None Remove="Dtos\Events\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.7" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <PackageReference Include="System.Net.Http.Json" Version="10.0.7" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Dtos\Audio\" />
-    <Folder Include="Dtos\Common\" />
-    <Folder Include="Dtos\Events\" />
   </ItemGroup>
 
 </Project>

@@ -9,6 +9,6 @@ namespace ActivityAssistent.Shared.Dtos.Identity
         public bool IsSuccess { get; set; }
         public string AccessToken { get; set; } = string.Empty;
         public string ErrorMessage { get; set; } = string.Empty;
-        public DateTime ExpiresAt { get; set; }
+        public DateTime? ExpiresAt { get; set; }
     }
 }

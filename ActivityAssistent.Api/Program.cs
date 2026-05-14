@@ -1,3 +1,4 @@
+using System.Configuration;
 using ActivityAssistent.Api.Configuration;
 using ActivityAssistent.Api.Infrastructure;
 using ActivityAssistent.Api.Infrastructure.Repositories;
@@ -7,27 +8,83 @@ using ActivityAssistent.Shared.Interfaces.Conversations;
 using ActivityAssistent.Shared.Interfaces.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
+using Microsoft.Identity.Client;
 using Microsoft.Identity.Web;
 using Microsoft.PowerPlatform.Dataverse.Client;
+using Microsoft.ReportingServices.ReportProcessing.OnDemandReportObjectModel;
+using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Query;
 var builder = WebApplication.CreateBuilder(args);
 
 var DataverseSettings = builder.Configuration.GetSection("DataverseConfig");
 builder.Services.Configure<DataverseOptions>(DataverseSettings);
 
-//string ConnectionString = $@"
-//    AuthType=ClientSecret;
-//    Url={DataverseSettings["BaseUrl"]};
-//    ClientId={DataverseSettings["ClientId"]};
-//    ClientSecret={DataverseSettings["ClientSecret"]};";
-
 builder.Services.AddSingleton<IOrganizationServiceAsync>(ServiceProvider =>
 {
-   
     var Config = ServiceProvider.GetRequiredService<IOptions<DataverseOptions>>().Value;
 
-    var ConnectionString = $"AuthType=ClientSecret;Url={Config.BaseUrl};ClientId={Config.ClientId};ClientSecret={Config.ClientSecret};";
+    
+    Console.WriteLine($"BaseUrl: {Config.BaseUrl}");
+    Console.WriteLine($"ClientId: {Config.ClientId}");
+    Console.WriteLine($"ClientSecret: {(string.IsNullOrEmpty(Config.ClientSecret) ? "MISSING" : "PRESENT")}");
+    Console.WriteLine($"TenantId: {Config.TenantId}");
 
-    return new ServiceClient(ConnectionString);
+    string ClientId = $"{Config.ClientId}";
+    string TenantId = $"{Config.TenantId}";
+    string ClientSecret = $"{Config.ClientSecret}";
+    // Voor Microsoft Graph is dit bijvoorbeeld: https://graph.microsoft.com/.default
+    string resourceUrl = Config.BaseUrl.EndsWith("/") ? Config.BaseUrl : Config.BaseUrl + "/";
+    string[] Scopes = new[] { $"{resourceUrl}.default" };
+
+    // 1. Initialiseer de Confidential Client
+    IConfidentialClientApplication ConfidentialApp = ConfidentialClientApplicationBuilder.Create(ClientId)
+        .WithTenantId(TenantId)
+        .WithClientSecret(ClientSecret)
+        .Build();
+    ServiceClient serviceClient;
+    try
+    {
+
+        // 4. Maak de ServiceClient aan met de externe Token Provider
+        // De lambda-functie haalt (indien nodig) live het token op uit de MSAL cache
+         serviceClient = new ServiceClient(
+            tokenProviderFunction: async (string crmUrl) =>
+            {
+                var authResult = await ConfidentialApp.AcquireTokenForClient(Scopes).ExecuteAsync();
+                return authResult.AccessToken;
+            },
+            instanceUrl: new Uri(Config.BaseUrl)
+        );
+
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("DATAVERSE ERROR: " + ex.Message);
+        if (ex.InnerException != null) Console.WriteLine($"Inner: {ex.InnerException.Message}");
+        throw;
+    }
+
+    if (serviceClient.IsReady)
+    {
+        Console.WriteLine("Succesvol verbonden met Dataverse!");
+        IOrganizationServiceAsync service = (IOrganizationServiceAsync)serviceClient;
+
+        // Voorbeeld aanroep: Haal de naam van de eerste 5 accounts op
+        QueryExpression query = new QueryExpression("account") { ColumnSet = new ColumnSet("name") };
+        EntityCollection results = Task.Run(() => service.RetrieveMultipleAsync(query)).Result;
+
+        foreach (var entity in results.Entities)
+        {
+            Console.WriteLine($"Account Naam: {entity.GetAttributeValue<string>("name")}");
+        }
+    }
+    else
+    {
+        Console.WriteLine($"Verbinding mislukt: {serviceClient.LastError}");
+    }
+    return serviceClient;
+
+
 });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
