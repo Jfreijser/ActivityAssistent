@@ -1,0 +1,163 @@
+﻿@page "/SalesConversation/"
+@using MudBlazor
+@using ActivityAssistent.Shared.Dtos.Identity
+
+@* Vang het gecascadeerde profiel op vanuit MainLayout *@
+
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    
+    @* SENSE 1: Pagina Header *@
+    <MudGrid Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+        <MudItem>
+            <MudText Typo="Typo.h4" Color="Color.Primary">Sales Conversations</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Overzicht van opgenomen verkoopgesprekken en AI-analyses.
+            </MudText>
+        </MudItem>
+        <MudItem>
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       StartIcon="@Icons.Material.Filled.AddIcCall" 
+                       Size="Size.Large"
+                       Href="@("/SalesConversation/Create")">
+
+                Create a new  conversation
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+
+    @* SECTIE 2: KPI / Status Kaarten *@
+    <MudGrid Class="mb-6">
+        <MudItem xs="12" sm="4">
+            <MudCard Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Totaal Gesprekken</MudText>
+                <MudText Typo="Typo.h4">0</MudText>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <MudCard Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.subtitle2" Color="Color.Warning">In Verwerking door AI</MudText>
+                <MudText Typo="Typo.h4">0</MudText>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <MudCard Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.subtitle2" Color="Color.Success">Afgeronde Analyses</MudText>
+                <MudText Typo="Typo.h4">0</MudText>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    @* SECTIE 3: Filters & Zoeken *@
+    <MudPaper Elevation="2" Class="pa-4 mb-6">
+        <MudGrid AlignItems="AlignItems.Center">
+            <MudItem xs="12" sm="6" md="4">
+                <MudTextField @bind-Value="SearchTerm" 
+                              Placeholder="Zoek op klant of medewerker..." 
+                              Adornment="Adornment.Start" 
+                              AdornmentIcon="@Icons.Material.Filled.Search" 
+                              IconSize="Size.Medium" 
+                              Immediate="true" />
+            </MudItem>
+            <MudItem xs="12" sm="3" md="3">
+                <MudSelect @bind-Value="SelectedStatus" T="string" Label="Status Filter">
+                    <MudSelectItem Value="@("Alle")">Alle statussen</MudSelectItem>
+                    <MudSelectItem Value="@("Verwerking")">In verwerking</MudSelectItem>
+                    <MudSelectItem Value="@("Afgerond")">Afgerond</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="3" md="2">
+                <MudDatePicker @bind-Date="FilterDate" Label="Datum vanaf" Editable="true" SaveOnBlur="true" />
+            </MudItem>
+            <MudItem xs="12" sm="12" md="3" Class="d-flex justify-sm-end">
+                <MudButton Variant="Variant.Outlined" 
+                           Color="Color.Secondary" 
+                           OnClick="ResetFilters" 
+                           Class="mt-2">
+                    Filters Wissen
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    @* SECTIE 4: Data Tabel *@
+    <MudPaper Elevation="2">
+        @if (IsLoadingConversations)
+        {
+            <div class="d-flex justify-center align-center pa-12">
+                <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                <MudText Class="ml-4">Gesprekken aan het laden...</MudText>
+            </div>
+        }
+        else
+        {
+            @* Placeholder voor de MudTable/MudDataGrid die je zelf gaat binden *@
+            <MudTable Items="ConversationsList" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Datum</MudTh>
+                    <MudTh>Klant / Onderwerp</MudTh>
+                    <MudTh>Medewerker</MudTh>
+                    <MudTh>Duur</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh Style="text-align: right;">Acties</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    @* Hier komt straks jouw data-binding logica via context *@
+                    <MudTd DataLabel="Datum">17-05-2026</MudTd>
+                    <MudTd DataLabel="Klant / Onderwerp">Voorbeeld Klant B.V.</MudTd>
+                    <MudTd DataLabel="Medewerker">@UserProfile?.FullName</MudTd>
+                    <MudTd DataLabel="Duur">12:45</MudTd>
+                    <MudTd DataLabel="Status">
+                        <MudChip T="string" Color="Color.Success" Size="Size.Small">Afgerond</MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Acties" Style="text-align: right;">
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Size="Size.Small" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" />
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager InfoFormat="{first_item}-{last_item} van {all_items}" RowsPerPageString="Rijen per pagina:" />
+                </PagerContent>
+            </MudTable>
+        }
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+    [CascadingParameter]
+    public UserProfileDto? UserProfile { get; set; }
+    // Properties voor filters en status (PascalCase)
+    private string SearchTerm { get; set; } = string.Empty;
+    private string SelectedStatus { get; set; } = "Alle";
+    private DateTime? FilterDate { get; set; }
+    private bool IsLoadingConversations { get; set; } = false;
+
+    // Tijdelijke lijst placeholder voor de datatabel binding
+    private List<string> ConversationsList { get; set; } = new List<string> { "Gesprek 1" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadConversationsAsync();
+    }
+
+    private async Task LoadConversationsAsync()
+    {
+        IsLoadingConversations = true;
+
+        // TODO: Implementeer hier de API call naar jouw REST API tussenlaag
+        await Task.Delay(500); // Simuleer netwerkvertraging
+
+        IsLoadingConversations = false;
+    }
+
+   
+
+    private void ResetFilters()
+    {
+        SearchTerm = string.Empty;
+        SelectedStatus = "Alle";
+        FilterDate = null;
+    }
+}

@@ -1,43 +1,104 @@
 ﻿@inherits LayoutComponentBase
 @using MudBlazor
 @using ActivityAssistent.WebV2.Client.Services
+@using ActivityAssistent.Shared.Dtos.Identity
+@using ActivityAssistent.Shared.Interfaces.Identity
 @inject IThemeService ThemeService
+@inject IAuthService AuthService
+@inject IDialogService DialogService
+@using ActivityAssistent.WebV2.Client.Pages
 
 <MudThemeProvider Theme="@ActivityAssistantTheme" IsDarkMode="@IsDarkMode" />
 <MudDialogProvider />
 <MudSnackbarProvider />
+<MudPopoverProvider />
 
 <MudLayout>
     <MudAppBar Elevation="1" Color="Color.Surface">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                       Color="Color.Inherit"
+                       Edge="Edge.Start"
+                       OnClick="@ToggleDrawer"
+                       Class="mr-2" />
+                       
         <MudText Typo="Typo.h6" Color="Color.Primary">Activity Assistant</MudText>
+        
         <MudSpacer />
+        
+        @if (IsLoadingProfile)
+        {
+            <MudProgressCircular Color="Color.Inherit" Size="Size.Small" Indeterminate="true" Class="mx-2" />
+        }
+        @* Controleert nu correct of het profiel leeg is OF dat het een gastgebruiker betreft *@
+        else if (UserProfile == null || UserProfile.UserId == null)
+        {
+            <MudButton Variant="Variant.Text"
+                       Color="Color.Inherit"
+                       StartIcon="@Icons.Material.Filled.Login"
+                       Class="mx-2"
+                       OnClick="@HandleLogin">
+                Login
+            </MudButton>
+        }
+        else
+        {
+            <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="mx-2">
+                <ActivatorContent>
+                    <MudAvatar Color="Color.Primary" Variant="Variant.Filled" Size="Size.Medium">
+                        @GetUserInitial()
+                    </MudAvatar>
+                </ActivatorContent>
+                <ChildContent>
+                    <div class="px-4 py-2">
+                        <MudText Typo="Typo.body2"><b>@UserProfile.FullName</b></MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@UserProfile.JobTitle</MudText>
+                    </div>
+                    <MudDivider />
+                    <MudMenuItem Icon="@Icons.Material.Filled.Settings">Account Settings</MudMenuItem>
+                    <MudMenuItem Icon="@Icons.Material.Filled.Logout" IconColor="Color.Error">Logout</MudMenuItem>
+                </ChildContent>
+            </MudMenu>
+        }
+
         <MudIconButton Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
                        OnClick="ToggleDarkMode"
                        Color="Color.Inherit" />
     </MudAppBar>
     
+    <MudDrawer @bind-Open="IsDrawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
+        <MudNavMenu>
+            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
+            <MudNavLink Href="/SalesConversation/" Icon="@Icons.Material.Filled.Handshake">Sales conversations</MudNavLink>
+           </MudNavMenu>
+    </MudDrawer>
+    
     <MudMainContent>
         <MudContainer MaxWidth="MaxWidth.Large" Class="my-4 pt-4">
-            @Body
+            @* De CascadingValue zorgt ervoor dat onderliggende pagina's het profiel kunnen opvangen *@
+            <CascadingValue Value="UserProfile">
+                @Body
+            </CascadingValue>
         </MudContainer>
     </MudMainContent>
 </MudLayout>
 
 @code {
     private bool IsDarkMode = true;
+    private bool IsDrawerOpen = true;
+    private bool IsLoadingProfile = true;
+    private UserProfileDto? UserProfile;
 
-    // Definitie van het thema met de Spotify-kleuren uit je MAUI-project
     private MudTheme ActivityAssistantTheme = new MudTheme()
     {
         PaletteDark = new PaletteDark()
         {
-            Primary = "#1DB954",        // Spotify Groen
+            Primary = "#1DB954", // Spotify Groen
             PrimaryDarken = "#1ed760",
             Secondary = "#1A3A52",
             Tertiary = "#1A1A1E",
-            Background = "#0D1F2D",     // <-- Hier je donkerblauwe kleur gezet!
-            Surface = "#1A3A52",        // <-- Maakt kaarten/vlakken een lichtere tint blauw
-            AppbarBackground = "#0D1F2D", // <-- Bovenste balk ook donkerblauw
+            Background = "#0D1F2D",
+            Surface = "#1A3A52",
+            AppbarBackground = "#0D1F2D",
             TextPrimary = "#E0E0E0",
             TextSecondary = "#A9A9A9"
         },
@@ -55,16 +116,69 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // De service geeft nu alleen nog de status terug
-        IsDarkMode = await ThemeService.IsDarkModeAsync();
+        var ThemeTask = ThemeService.IsDarkModeAsync();
+        var ProfileTask = LoadUserProfileAsync();
+
+        await Task.WhenAll(ThemeTask, ProfileTask);
+        IsDarkMode = await ThemeTask;
+    }
+
+    private async Task LoadUserProfileAsync()
+    {
+        try
+        {
+            UserProfile = await AuthService.GetCurrentProfileAsync();
+        }
+        catch (Exception Ex)
+        {
+            Console.WriteLine($"Fout bij laden gebruikersprofiel: {Ex.Message}");
+            IsLoadingProfile = false;
+        }
+        finally
+        {
+            IsLoadingProfile = false;
+        }
     }
 
     public async Task ToggleDarkMode()
     {
         IsDarkMode = !IsDarkMode;
         await ThemeService.SetDarkModeAsync(IsDarkMode);
-        
-        // Vertel Blazor dat de variabelen zijn aangepast en hij opnieuw moet tekenen!
         StateHasChanged();
+    }
+
+    private void ToggleDrawer()
+    {
+        IsDrawerOpen = !IsDrawerOpen;
+    }
+
+    private async Task HandleLogin()
+    {
+        var Options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            Position = DialogPosition.Center,
+            NoHeader = true 
+        };
+
+        var Dialog = await DialogService.ShowAsync<Login>("", Options);
+        var Result = await Dialog.Result;
+
+        if (!Result.Canceled)
+        {
+            await LoadUserProfileAsync(); 
+            StateHasChanged();
+        }
+    }
+
+    private string GetUserInitial()
+    {
+        if (!string.IsNullOrWhiteSpace(UserProfile?.FullName))
+        {
+            return UserProfile.FullName.Substring(0, 1).ToUpper();
+        }
+        return "U";
     }
 }

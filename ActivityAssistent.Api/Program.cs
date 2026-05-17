@@ -1,4 +1,5 @@
 using System.Configuration;
+using System.Net.NetworkInformation;
 using ActivityAssistent.Api.Configuration;
 using ActivityAssistent.Api.Infrastructure;
 using ActivityAssistent.Api.Infrastructure.Repositories;
@@ -14,6 +15,9 @@ using Microsoft.PowerPlatform.Dataverse.Client;
 using Microsoft.ReportingServices.ReportProcessing.OnDemandReportObjectModel;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+
 var builder = WebApplication.CreateBuilder(args);
 
 var DataverseSettings = builder.Configuration.GetSection("DataverseConfig");
@@ -45,8 +49,6 @@ builder.Services.AddSingleton<IOrganizationServiceAsync>(ServiceProvider =>
     try
     {
 
-        // 4. Maak de ServiceClient aan met de externe Token Provider
-        // De lambda-functie haalt (indien nodig) live het token op uit de MSAL cache
          serviceClient = new ServiceClient(
             tokenProviderFunction: async (string crmUrl) =>
             {
@@ -87,8 +89,32 @@ builder.Services.AddSingleton<IOrganizationServiceAsync>(ServiceProvider =>
 
 });
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+//builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+//    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+
+var JwtSettings = builder.Configuration.GetSection("Jwt");
+var Key = Encoding.ASCII.GetBytes(JwtSettings["Key"]!);
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = JwtSettings["Issuer"],
+        ValidAudience = JwtSettings["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Key)
+    };
+});
+
+
 string MyAllowSpecificOrigins = "MyCorsPolicy";
 builder.Services.AddCors(options =>
 {
@@ -106,6 +132,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserContext, UserContext>();
 builder.Services.AddScoped<IUserRepository, DataverseUserRepository>();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHttpContextAccessor();
 
 // Add services to the container.
 

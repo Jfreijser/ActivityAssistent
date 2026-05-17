@@ -11,16 +11,20 @@ namespace ActivityAssistent.Api.Infrastructure.Repositories
         public async Task<UserProfileDto?> GetProfileByIdAsync(Guid UserId, CancellationToken Token = default)
         {
 
-            var Result = await DataverseClient.RetrieveAsync("systemuser",UserId,new ColumnSet("fullname", "internalemailaddress", "title"));
+            var Result = await DataverseClient.RetrieveAsync(
+                "cre7e_externalcustomer",
+                UserId,
+                new ColumnSet("cre7e_name", "cre7e_emailaddress")
+            );
 
             if (Result == null) return null;
-            
+
             return new UserProfileDto
             {
                 UserId = UserId,
-                FullName = Result.GetAttributeValue<string>("fullname"),
-                Email = Result.GetAttributeValue<string>("internalemailaddress"),
-                JobTitle = Result.GetAttributeValue<string>("title")
+                FullName = Result.GetAttributeValue<string>("cre7e_name"),
+                Email = Result.GetAttributeValue<string>("cre7e_emailaddress"),
+                JobTitle = "Sales Representative" 
             };
         }
         

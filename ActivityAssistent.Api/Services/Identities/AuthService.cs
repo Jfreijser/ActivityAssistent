@@ -5,6 +5,7 @@ using ActivityAssistent.Api.Infrastructure.Repositories; //
 using ActivityAssistent.Shared.Dtos.Identity;
 using ActivityAssistent.Shared.Interfaces;
 using ActivityAssistent.Shared.Interfaces.Identity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.PowerPlatform.Dataverse.Client;
 using Microsoft.Xrm.Sdk; // Voor 'Entity' en 'ColumnSet'
@@ -12,6 +13,7 @@ using Microsoft.Xrm.Sdk.Query; // Voor 'ColumnSet'
 
 namespace ActivityAssistent.Api.Services
 {
+    [Authorize]
     public class AuthService(IUserRepository UserRepository, IUserContext UserContext, IConfiguration configuration) : IAuthService
     {
         public async Task<UserProfileDto> GetCurrentProfileAsync(CancellationToken Token = default)
@@ -20,10 +22,16 @@ namespace ActivityAssistent.Api.Services
 
             if (CurrentId == Guid.Empty)
             {
-                throw new UnauthorizedAccessException("Geen actieve gebruiker gevonden.");
+                return new UserProfileDto
+                {
+                    UserId = null,
+                    FullName = "Gastgebruiker",
+                    Email = string.Empty,
+                    JobTitle = string.Empty
+                };
             }
 
-            var UserProfile = await UserRepository.GetProfileByIdAsync(CurrentId);
+            var UserProfile = await UserRepository.GetProfileByIdAsync(CurrentId, Token);
 
             if (UserProfile == null)
             {
@@ -33,6 +41,7 @@ namespace ActivityAssistent.Api.Services
             return UserProfile;
         }
 
+        [AllowAnonymous]
         public async Task<AuthResultDto> LoginAsync(LoginCredentialsDto Dto, CancellationToken Token = default)
         {
             var User = await UserRepository.GetUserForLoginByEmailAsync(Dto.Email, Token);

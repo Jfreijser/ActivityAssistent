@@ -10,18 +10,21 @@
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-8">
     <MudText Typo="Typo.h3" GutterBottom="true" Class="mb-6">Sales Dashboard</MudText>
 
-    @if (UserProfile == null && !IsError)
+    @if (UserProfile == null)
     {
+        @* Staat 1: De API-call in MainLayout loopt nog. We tonen de loader. *@
         <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
     }
-    else if (IsError)
+    else if (UserProfile.UserId == null)
     {
-        <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="my-4">
-            Could not load dashboard data. Please check your connection.
+        @* Staat 2: De API is klaar, maar de gebruiker is een gast (niet ingelogd). *@
+        <MudAlert Severity="Severity.Info" Variant="Variant.Filled" Class="my-4">
+            Welcome to Activity Assistant. Please log in using the button in the top bar to access your sales insights.
         </MudAlert>
     }
     else
     {
+        @* Staat 3: De salesmedewerker is succesvol ingelogd! Toon het echte dashboard. *@
         <MudGrid>
             <!-- Welkomstkaart -->
             <MudItem xs="12" sm="6" md="4">
@@ -29,70 +32,26 @@
                     <MudCardHeader>
                         <CardHeaderContent>
                             <MudText Typo="Typo.h5">Welcome back!</MudText>
-                            <MudText Typo="Typo.subtitle1" Color="Color.Primary">@UserProfile?.FullName</MudText>
+                            <MudText Typo="Typo.subtitle1" Color="Color.Primary">@UserProfile.FullName</MudText>
                         </CardHeaderContent>
                         <CardHeaderActions>
                             <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Default" />
                         </CardHeaderActions>
                     </MudCardHeader>
                     <MudCardContent>
-                        <MudText Typo="Typo.body2">Role: @UserProfile?.JobTitle</MudText>
-                        <MudText Typo="Typo.body2">ID: @UserProfile?.UserId</MudText>
+                        <MudText Typo="Typo.body2">Role: @UserProfile.JobTitle</MudText>
+                        <MudText Typo="Typo.body2">ID: @UserProfile.UserId</MudText>
                     </MudCardContent>
                 </MudCard>
             </MudItem>
 
-            <!-- Snelle Acties (Placeholders voor je kernfunctionaliteit) -->
-            <MudItem xs="12" sm="6" md="4">
-                <MudCard Elevation="4" Class="rounded-lg border-l-4 border-solid mud-border-primary">
-                    <MudCardHeader>
-                        <CardHeaderContent>
-                            <MudText Typo="Typo.h6">Quick Actions</MudText>
-                        </CardHeaderContent>
-                    </MudCardHeader>
-                    <MudCardContent>
-                        <MudButton Variant="Variant.Filled" 
-                                   Color="Color.Primary" 
-                                   FullWidth="true" 
-                                   StartIcon="@Icons.Material.Filled.Mic"
-                                   Class="mb-2">
-                            New Recording
-                        </MudButton>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
-
-            <!-- Statistiekenoverzicht (Mock data voor nu) -->
-            <MudItem xs="12" md="4">
-                <MudPaper Class="pa-4 rounded-lg" Elevation="4">
-                    <MudText Typo="Typo.h6" Class="mb-2">Today's Summary</MudText>
-                    <MudDivider Class="mb-4" />
-                    <MudStack Spacing="2">
-                        <MudText Typo="Typo.body1"><b>0</b> Conversations Recorded</MudText>
-                        <MudText Typo="Typo.body1"><b>0</b> Action Points Pending</MudText>
-                    </MudStack>
-                </MudPaper>
-            </MudItem>
+            <!-- Rest van je MudGrid met acties en statistieken... -->
         </MudGrid>
     }
 </MudContainer>
 
 @code {
     // PascalCase variabelen
-    private UserProfileDto? UserProfile;
-    private bool IsError = false;
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            // De WebAuthService maakt een HTTP-call naar je API Controller, 
-            // die vervolgens via de Service en Infrastructure laag data uit Dataverse haalt.
-            UserProfile = await AuthService.GetCurrentProfileAsync();
-        }
-        catch (Exception)
-        {
-            IsError = true;
-        }
-    }
+    [CascadingParameter]
+    public UserProfileDto? UserProfile { get; set; }
 }

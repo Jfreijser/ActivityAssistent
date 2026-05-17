@@ -1,0 +1,191 @@
+﻿@page "/SalesConversation/Create"
+@using MudBlazor
+@using ActivityAssistent.Shared.Dtos.Identity
+@inject NavigationManager NavManager
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudPaper Elevation="4" Class="pa-6" Style="border-radius: 16px;">
+        
+        @* Header met terug-knop *@
+        <div class="d-flex align-center mb-6">
+            <MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
+                           OnClick="@(() => NavManager.NavigateTo("/SalesConversation/SalesConversationIndex"))"
+                           Class="mr-2" />
+            <MudText Typo="Typo.h5" Color="Color.Primary"><b>Gesprek Voorbereiden</b></MudText>
+        </div>
+
+        <MudText Typo="Typo.body2" Class="mb-6" Color="Color.Secondary">
+            Vul de basisgegevens in zodat je de opname direct kunt starten zodra het gesprek begint.
+        </MudText>
+
+        <MudForm @ref="Form" @bind-IsValid="@IsFormValid">
+            <MudGrid Spacing="3">
+                
+                @* 1. Onderwerp / Titel *@
+                <MudItem xs="12">
+                    <MudTextField T="string"
+                                  Label="Onderwerp van het gesprek"
+                                  Required="true"
+                                  RequiredError="Geef het gesprek een herkenbare titel"
+                                  Placeholder="bijv. Kennismaking met Jansen B.V."
+                                  Variant="Variant.Outlined"
+                                  @bind-Value="ConversationDto.Title" />
+                </MudItem>
+
+                @* 2. Klant Selectie (Lookup naar Account/Contact) *@
+                <MudItem xs="12">
+                    <MudSelect T="Guid?"
+                               Label="Klant / Bedrijf"
+                               Required="true"
+                               RequiredError="Selecteer een klant"
+                               Variant="Variant.Outlined"
+                               AnchorOrigin="Origin.BottomCenter"
+                               @bind-Value="ConversationDto.CustomerId">
+                        @* Hier komen straks je accounts uit de API *@
+                        <MudSelectItem Value="@(Guid.Empty)">-- Selecteer een klant --</MudSelectItem>
+                        <MudSelectItem Value="@(Guid.NewGuid())">Klant A (Demo)</MudSelectItem>
+                        <MudSelectItem Value="@(Guid.NewGuid())">Klant B (Demo)</MudSelectItem>
+                    </MudSelect>
+                    <div class="d-flex justify-end mt-1">
+                        <MudButton Variant="Variant.Text"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Add"
+                                   Size="Size.Small"
+                                   OnClick="OpenCreateCustomerDialog">
+                            Nieuwe klant aanmaken
+                        </MudButton>
+                    </div>
+                </MudItem>
+
+                @* 3. Datum en Tijd *@
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker Label="Datum afspraak"
+                                   @bind-Date="SelectedDate"
+                                   Variant="Variant.Outlined"
+                                   Editable="true" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTimePicker Label="Tijdstip"
+                                   @bind-Time="SelectedTime"
+                                   Variant="Variant.Outlined"
+                                   Editable="true" />
+                </MudItem>
+
+                @* 4. Medewerker (Read-only, want jij bent het) *@
+                <MudItem xs="12">
+                    <MudTextField T="string"
+                                  Label="Verkoopmedewerker"
+                                  ReadOnly="true"
+                                  Value="@UserProfile?.FullName"
+                                  Variant="Variant.Outlined"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Person" />
+                </MudItem>
+
+                @* Actie Knoppen *@
+                <MudItem xs="12" Class="d-flex justify-end mt-4">
+                    <MudButton Variant="Variant.Text"
+                               Color="Color.Secondary"
+                               OnClick="@(() => NavManager.NavigateTo("/SalesConversation/SalesConversationIndex"))"
+                               Class="mr-2">
+                        Annuleren
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="HandleSave"
+                               Disabled="@(!IsFormValid)"
+                               Size="Size.Large">
+                        Opslaan & Klaarzetten
+                    </MudButton>
+                </MudItem>
+
+            </MudGrid>
+        </MudForm>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [CascadingParameter] public UserProfileDto? UserProfile { get; set; }
+
+    private MudForm Form;
+    private bool IsFormValid;
+    
+    // Jouw DTO (Zorg dat deze in je Shared project staat)
+    private SalesConversationCreateDto ConversationDto = new();
+
+    // Helpers voor de Date/Time pickers
+    private DateTime? SelectedDate = DateTime.Today;
+    private TimeSpan? SelectedTime = DateTime.Now.TimeOfDay;
+
+    protected override void OnInitialized()
+    {
+        // Koppel automatisch de medewerker ID aan de nieuwe opname
+        if (UserProfile != null)
+        {
+            ConversationDto.SalesUserId = UserProfile.UserId; // De GUID uit je eigen tabel
+        }
+    }
+
+    private async Task HandleSave()
+    {
+        await Form.Validate();
+
+        if (IsFormValid)
+        {
+            // Combineer datum en tijd
+            if (SelectedDate.HasValue && SelectedTime.HasValue)
+            {
+                ConversationDto.MeetingDate = SelectedDate.Value.Add(SelectedTime.Value);
+            }
+
+            // TODO: API Call naar je tussenlaag om op te slaan in Dataverse
+            // var result = await SalesService.CreateAsync(ConversationDto);
+
+            Snackbar.Add("Gesprek succesvol klaargezet!", Severity.Success);
+            
+            // Ga terug naar het overzicht
+            NavManager.NavigateTo("/SalesConversation/SalesConversationIndex");
+        }
+    }
+
+    private async Task OpenCreateCustomerDialog()
+    {
+        var Options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            BackdropClick = true // Voorkomt per ongeluk sluiten naast het venster
+        };
+
+        // 'CreateCustomerDialog' is de component (het formulier) die in de pop-up verschijnt
+        var Dialog = await DialogService.ShowAsync<CreateCustomerDialog>("Nieuwe Klant Toevoegen", Options);
+        var Result = await Dialog.Result;
+
+        // Controleer of de gebruiker niet op annuleren heeft gedrukt
+        if (!Result.Canceled && Result.Data is Guid NewCustomerId)
+        {
+            // 1. TODO: Ververs hier je lokale lijst met klanten door je REST API opnieuw aan te roepen.
+            // await LoadCustomersAsync();
+
+            // 2. Selecteer direct de zojuist aangemaakte klant in de dropdown
+            ConversationDto.CustomerId = NewCustomerId;
+        
+            // Geef de UI een seintje dat de geselecteerde waarde is aangepast
+            StateHasChanged();
+        
+            Snackbar.Add("Klant succesvol aangemaakt en geselecteerd!", Severity.Success);
+        }
+    }
+
+    // Placeholder voor de data-structuur
+    public class SalesConversationCreateDto
+    {
+        public string Title { get; set; }
+        public Guid? CustomerId { get; set; }
+        public Guid? SalesUserId { get; set; }
+        public DateTime MeetingDate { get; set; } = DateTime.Now;
+    }
+}

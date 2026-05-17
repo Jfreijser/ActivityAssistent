@@ -1,0 +1,127 @@
+﻿@using MudBlazor
+@using ActivityAssistent.Shared.Dtos.Conversations
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Business" Class="mr-2" />
+            Add new customer
+        </MudText>
+    </TitleContent>
+    
+    <DialogContent>
+        <MudText Typo="Typo.body2" Class="mb-4" Color="Color.Secondary">
+            Fill in some basic information about the customer.
+        </MudText>
+
+        <EditForm Model="@CustomerDto" OnValidSubmit="Submit">
+            <DataAnnotationsValidator />
+
+            <MudGrid Spacing="2">
+            
+                <MudItem xs="12">
+                    <MudTextField Label="Company Name"
+                                  Variant="Variant.Outlined"
+                                  MaxLength="100"
+                                  For="@(() => CustomerDto.CompanyName)"
+                                  @bind-Value="CustomerDto.CompanyName" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Email Address"
+                                  Variant="Variant.Outlined"
+                                  InputType="InputType.Email"
+                                  MaxLength="100"
+                                  For="@(() => CustomerDto.EmailAddress)"
+                                  @bind-Value="CustomerDto.EmailAddress" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Phone Number"
+                                  Variant="Variant.Outlined"
+                                  InputType="InputType.Telephone"
+                                  For="@(() => CustomerDto.PhoneNumber)"
+                                  @bind-Value="CustomerDto.PhoneNumber" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="City"
+                                  Variant="Variant.Outlined"
+                                  InputType="InputType.Text"
+                                  MaxLength="50"
+                                  For="@(() => CustomerDto.City)"
+                                  @bind-Value="CustomerDto.City" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Address"
+                                  Variant="Variant.Outlined"
+                                  MaxLength="50"
+                                  InputType="InputType.Text"
+                                  For="@(() => CustomerDto.Address)"
+                                  @bind-Value="CustomerDto.Address" />
+                </MudItem>
+              
+
+            </MudGrid>
+
+            <div class="d-flex justify-end mt-6">
+                <MudButton OnClick="Cancel" Variant="Variant.Text" Color="Color.Secondary" Class="mr-2">
+                    Cancel
+                </MudButton>
+                <MudButton ButtonType="ButtonType.Submit"
+                           Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Size="Size.Large">
+                    Add customer
+                </MudButton>
+            </div>
+        </EditForm>
+    </DialogContent>
+    
+</MudDialog>
+
+@code {
+    // Vang de instantie van deze dialoog op (nodig om te kunnen sluiten)
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    // Formulier referentie voor validatie
+    private MudForm Form = null!;
+    private bool IsFormValid;
+
+    private CreateCustomerDialogDto CustomerDto { get; set; } = new();
+
+    private void Cancel()
+    {
+        // Sluit de pop-up en geef door aan de hoofdpagina dat er is geannuleerd
+        MudDialog.Cancel();
+    }
+
+    private async Task Submit()
+    {
+        await Form.ValidateAsync();
+
+        if (IsFormValid)
+        {
+            try
+            {
+                // 1. TODO: Roep hier je REST API service aan om de klant op te slaan in Dataverse
+                // var newId = await CustomerService.CreateAsync(CustomerModel);
+                
+                // Voor nu simuleren we een succesvolle database insert door een tijdelijke Guid te genereren
+                Guid DummyDataverseGuid = Guid.NewGuid();
+
+                // 2. Sluit de dialoog en geef de nieuwe Guid mee terug als resultaat
+                MudDialog.Close(DialogResult.Ok(DummyDataverseGuid));
+            }
+            catch (Exception Ex)
+            {
+                Snackbar.Add($"Fout bij opslaan klant: {Ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    
+}

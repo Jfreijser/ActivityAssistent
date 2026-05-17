@@ -10,15 +10,13 @@ namespace ActivityAssistent.Api.Infrastructure
         {
             get
             {
-                // We halen de User uit de huidige HTTP-context
                 var User = Accessor.HttpContext?.User;
 
-                // Zoek naar de unieke ID (ObjectIdentifier voor Azure/Dataverse of 'sub')
+                // Zoek naar de Azure identifier, de standaard .NET identifier, óf direct naar "sub"
                 var IdClaim = User?.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")?.Value
-                              ?? User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                              ?? User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                              ?? User?.FindFirst("sub")?.Value; // Jouw handmatige 'Sub' claim uit de AuthService
 
-                // Als het lukt om de string naar een Guid te vertalen, geven we die terug.
-                // Zo niet, dan geven we Guid.Empty terug.
                 return Guid.TryParse(IdClaim, out var ValidGuid) ? ValidGuid : Guid.Empty;
             }
         }
