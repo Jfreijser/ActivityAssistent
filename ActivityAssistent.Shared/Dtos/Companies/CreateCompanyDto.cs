@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 
-namespace ActivityAssistent.Shared.Dtos.Conversations
+namespace ActivityAssistent.Shared.Dtos.Companies
 {
-    public class CreateCustomerDialogDto
+    public class CreateCompanyDto
     {
         [Required(ErrorMessage = "Company Name is required.")]
         [StringLength(100, ErrorMessage = "Company Name cannot exceed 100 characters.")]

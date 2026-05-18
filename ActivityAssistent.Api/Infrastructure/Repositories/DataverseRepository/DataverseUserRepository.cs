@@ -4,7 +4,7 @@ using Microsoft.PowerPlatform.Dataverse.Client;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 
-namespace ActivityAssistent.Api.Infrastructure.Repositories
+namespace ActivityAssistent.Api.Infrastructure.Repositories.DataverseRepository
 {
     public class DataverseUserRepository(IOrganizationServiceAsync DataverseClient) : IUserRepository
     {

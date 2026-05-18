@@ -2,7 +2,6 @@ using System.Configuration;
 using System.Net.NetworkInformation;
 using ActivityAssistent.Api.Configuration;
 using ActivityAssistent.Api.Infrastructure;
-using ActivityAssistent.Api.Infrastructure.Repositories;
 using ActivityAssistent.Api.Services;
 using ActivityAssistent.Api.Services.Conversations;
 using ActivityAssistent.Shared.Interfaces.Conversations;
@@ -17,6 +16,9 @@ using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using ActivityAssistent.Api.Infrastructure.Repositories.DataverseRepository;
+using ActivityAssistent.Shared.Interfaces.companies;
+using ActivityAssistent.Api.Services.Companies;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -130,6 +132,8 @@ builder.Services.AddCors(options =>
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserContext, UserContext>();
+builder.Services.AddScoped<ICompanyRepository, DataverseCompanyRepository>();
+builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IUserRepository, DataverseUserRepository>();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();

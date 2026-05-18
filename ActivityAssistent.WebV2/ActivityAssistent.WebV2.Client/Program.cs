@@ -1,7 +1,9 @@
+using ActivityAssistent.Shared.Interfaces.companies;
 using ActivityAssistent.Shared.Interfaces.Conversations;
 using ActivityAssistent.Shared.Interfaces.Identity;
 using ActivityAssistent.WebV2.Client.Services;
 using ActivityAssistent.WebV2.Client.Services.AuthService;
+using ActivityAssistent.WebV2.Client.Services.Companies;
 using ActivityAssistent.WebV2.Client.Services.ConversationService;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;
@@ -21,6 +23,9 @@ builder.Services.AddHttpClient<IAuthService, WebAuthService>(ConfigureBackendCli
     .AddHttpMessageHandler<BlazorAuthorizationHandler>();
 
 builder.Services.AddHttpClient<IConversationService, ConversationService>(ConfigureBackendClient)
+    .AddHttpMessageHandler<BlazorAuthorizationHandler>();
+builder.Services.AddHttpClient<ICompanyService, WebCompanyService>(ConfigureBackendClient)
+
     .AddHttpMessageHandler<BlazorAuthorizationHandler>();
 
 // 3. Herstel de standaard, naamloze HttpClient voor het framework zelf (Poort 7142 voor lokale assets)

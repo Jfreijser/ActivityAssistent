@@ -1,7 +1,11 @@
+using ActivityAssistent.Shared.Interfaces.companies;
+using ActivityAssistent.Shared.Interfaces.Conversations;
 using ActivityAssistent.Shared.Interfaces.Identity;
 using ActivityAssistent.WebV2.Client.Pages;
 using ActivityAssistent.WebV2.Client.Services;
 using ActivityAssistent.WebV2.Client.Services.AuthService;
+using ActivityAssistent.WebV2.Client.Services.Companies;
+using ActivityAssistent.WebV2.Client.Services.ConversationService;
 using ActivityAssistent.WebV2.Components;
 using MudBlazor.Services;
 
@@ -15,6 +19,8 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https:/
 builder.Services.AddMudServices();
 builder.Services.AddScoped<IThemeService, ThemeService>();
 builder.Services.AddScoped<IAuthService, WebAuthService>();
+builder.Services.AddScoped<IConversationService, ConversationService>();
+builder.Services.AddScoped<ICompanyService, WebCompanyService>();
 builder.Services.AddScoped<ErrorService>();
 
 var app = builder.Build();

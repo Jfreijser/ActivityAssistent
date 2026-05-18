@@ -8,6 +8,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Services\ActionPoints\**" />
+    <Compile Remove="Services\Ai\**" />
+    <Content Remove="Services\ActionPoints\**" />
+    <Content Remove="Services\Ai\**" />
+    <EmbeddedResource Remove="Services\ActionPoints\**" />
+    <EmbeddedResource Remove="Services\Ai\**" />
+    <None Remove="Services\ActionPoints\**" />
+    <None Remove="Services\Ai\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
@@ -21,12 +32,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ActivityAssistent.Shared\ActivityAssistent.Shared.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Mappings\" />
-    <Folder Include="Services\ActionPoints\" />
-    <Folder Include="Services\Ai\" />
   </ItemGroup>
 
 </Project>
