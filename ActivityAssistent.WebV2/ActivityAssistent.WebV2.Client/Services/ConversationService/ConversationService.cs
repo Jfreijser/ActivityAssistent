@@ -1,13 +1,23 @@
-﻿using ActivityAssistent.Shared.Dtos.Conversations;
+﻿using System.Net.Http.Json;
+using ActivityAssistent.Shared.Dtos.Companies;
+using ActivityAssistent.Shared.Dtos.Conversations;
 using ActivityAssistent.Shared.Interfaces.Conversations;
 
 namespace ActivityAssistent.WebV2.Client.Services.ConversationService
 {
     public class ConversationService(HttpClient Http) : IConversationService
     {
-        public Task<ConversationDto> CreateConversationAsync(ConversationDto Conversation, CancellationToken Token)
+        public async Task<ConversationDto> CreateConversationAsync(CreateConversationDto Conversation, CancellationToken Token)
         {
-            throw new NotImplementedException();
+            var Response = await Http.PostAsJsonAsync("api/Conversation/create", Conversation, Token);
+            if (Response.IsSuccessStatusCode)
+            {
+                return await Response.Content.ReadFromJsonAsync<ConversationDto>(cancellationToken: Token);
+            }
+            else
+            {
+                throw new HttpRequestException($"Error creating conversation: {Response.ReasonPhrase}");
+            }
         }
 
         public Task DeleteConversationAsync(Guid ConversationId, CancellationToken Token)

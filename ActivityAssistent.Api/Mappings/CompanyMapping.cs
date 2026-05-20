@@ -39,20 +39,50 @@ namespace ActivityAssistent.Api.Mappings
         // 3. Van interne Company Entity naar de uiteindelijke CompanyDto (Terug naar Blazor)
         public static CompanyDto ToDto(this Company Entity)
         {
-            
-                return new CompanyDto
-                {
-                    // Als de Guid null is, maken we er een Empty Guid van zodat de UI niet crasht
-                    CompanyId = Entity.CompanyId ?? Guid.Empty,
 
-                    // Defensieve fallback naar string.Empty als Dataverse een leeg veld teruggaf
-                    CompanyName = Entity.Name ?? string.Empty,
-                    EmailAddress = Entity.Email ?? string.Empty,
-                    PhoneNumber = Entity.PhoneNumber ?? string.Empty,
-                    City = Entity.City ?? string.Empty,
-                    Address = Entity.Address ?? string.Empty
-                };
-        
+            return new CompanyDto
+            {
+                // Als de Guid null is, maken we er een Empty Guid van zodat de UI niet crasht
+                CompanyId = Entity.CompanyId ?? Guid.Empty,
+
+                // Defensieve fallback naar string.Empty als Dataverse een leeg veld teruggaf
+                CompanyName = Entity.Name ?? string.Empty,
+                EmailAddress = Entity.Email ?? string.Empty,
+                PhoneNumber = Entity.PhoneNumber ?? string.Empty,
+                City = Entity.City ?? string.Empty,
+                Address = Entity.Address ?? string.Empty
+            };
+
+        }
+
+        public static Company ToDomainEntity(this Entity DataverseEntity)
+        {
+            if (DataverseEntity == null) return null;
+
+            return new Company
+            {
+                // DataverseEntity.Id bevat altijd de unieke GUID van het record
+                CompanyId = DataverseEntity.Id,
+
+                // Gebruik GetAttributeValue met de exacte schema-namen uit je QueryExpression
+                Name = DataverseEntity.GetAttributeValue<string>("name"),
+                PhoneNumber = DataverseEntity.GetAttributeValue<string>("telephone1"),
+                Email = DataverseEntity.GetAttributeValue<string>("emailaddress1"),
+                City = DataverseEntity.GetAttributeValue<string>("address1_city"),
+                Address = DataverseEntity.GetAttributeValue<string>("address1_composite"),
+
+                // Voor een EntityReference (lookup) halen we de Id op als deze bestaat
+                CompanyContact = DataverseEntity.GetAttributeValue<EntityReference>("primarycontactid")?.Id
+            };
+        }
+
+        public static CustomerDto ToCustomerDto(this Company Company)
+        {
+            return new CustomerDto
+            {
+                CustomerId = Company.CompanyId.Value,
+                CustomerName = Company.Name
+            };
         }
     }
 }

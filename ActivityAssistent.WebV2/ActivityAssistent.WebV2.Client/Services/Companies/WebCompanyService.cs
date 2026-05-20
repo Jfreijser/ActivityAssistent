@@ -35,6 +35,19 @@ namespace ActivityAssistent.WebV2.Client.Services.Companies
             throw new NotImplementedException();
         }
 
+        public async Task<List<CustomerDto>> GetCustomerAsync(CancellationToken Token)
+        {
+            var Response = await Http.GetAsync("api/Company/GetCustomers", Token);
+            if (Response. IsSuccessStatusCode)
+            {
+                return await Response.Content.ReadFromJsonAsync<List<CustomerDto>>(cancellationToken: Token);
+            }
+            else
+            {
+                throw new HttpRequestException($"Error creating company: {Response.ReasonPhrase}");
+            }
+        }
+
         public Task UpdateCompanyAsync(CompanyDto Company, CancellationToken Token)
         {
             throw new NotImplementedException();

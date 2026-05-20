@@ -25,7 +25,7 @@ var builder = WebApplication.CreateBuilder(args);
 var DataverseSettings = builder.Configuration.GetSection("DataverseConfig");
 builder.Services.Configure<DataverseOptions>(DataverseSettings);
 
-builder.Services.AddSingleton<IOrganizationServiceAsync>(ServiceProvider =>
+builder.Services.AddScoped<IOrganizationServiceAsync>(ServiceProvider =>
 {
     var Config = ServiceProvider.GetRequiredService<IOptions<DataverseOptions>>().Value;
 
@@ -68,24 +68,7 @@ builder.Services.AddSingleton<IOrganizationServiceAsync>(ServiceProvider =>
         throw;
     }
 
-    if (serviceClient.IsReady)
-    {
-        Console.WriteLine("Succesvol verbonden met Dataverse!");
-        IOrganizationServiceAsync service = (IOrganizationServiceAsync)serviceClient;
-
-        // Voorbeeld aanroep: Haal de naam van de eerste 5 accounts op
-        QueryExpression query = new QueryExpression("account") { ColumnSet = new ColumnSet("name") };
-        EntityCollection results = Task.Run(() => service.RetrieveMultipleAsync(query)).Result;
-
-        foreach (var entity in results.Entities)
-        {
-            Console.WriteLine($"Account Naam: {entity.GetAttributeValue<string>("name")}");
-        }
-    }
-    else
-    {
-        Console.WriteLine($"Verbinding mislukt: {serviceClient.LastError}");
-    }
+    
     return serviceClient;
 
 
@@ -135,6 +118,7 @@ builder.Services.AddScoped<IUserContext, UserContext>();
 builder.Services.AddScoped<ICompanyRepository, DataverseCompanyRepository>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IUserRepository, DataverseUserRepository>();
+builder.Services.AddScoped<IConversationRepository, ConversationRepository>();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
 

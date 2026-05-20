@@ -1,9 +1,15 @@
 ﻿@page "/SalesConversation/Create"
 @using MudBlazor
 @using ActivityAssistent.Shared.Dtos.Identity
+@using ActivityAssistent.Shared.Dtos.Companies
+@using ActivityAssistent.Shared.Dtos.Conversations
+@using ActivityAssistent.Shared.Interfaces.companies    
+@using ActivityAssistent.WebV2.Client.Pages.Companies
 @inject NavigationManager NavManager
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject ICompanyService CompanyService
+@implements IDisposable
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
     <MudPaper Elevation="4" Class="pa-6" Style="border-radius: 16px;">
@@ -31,23 +37,30 @@
                                   RequiredError="Geef het gesprek een herkenbare titel"
                                   Placeholder="bijv. Kennismaking met Jansen B.V."
                                   Variant="Variant.Outlined"
-                                  @bind-Value="ConversationDto.Title" />
+                                  @bind-Value="Conversation.Title" />
                 </MudItem>
-
                 @* 2. Klant Selectie (Lookup naar Account/Contact) *@
                 <MudItem xs="12">
-                    <MudSelect T="Guid?"
+                    <MudSelect T="Guid"
                                Label="Klant / Bedrijf"
                                Required="true"
                                RequiredError="Selecteer een klant"
                                Variant="Variant.Outlined"
                                AnchorOrigin="Origin.BottomCenter"
-                               @bind-Value="ConversationDto.CustomerId">
-                        @* Hier komen straks je accounts uit de API *@
-                        <MudSelectItem Value="@(Guid.Empty)">-- Selecteer een klant --</MudSelectItem>
+                               @bind-Value="Conversation.CompanyId">
+
+                        <MudSelectItem Value="@(Guid.Empty)">-- Select a Customer --</MudSelectItem>
+
+                        @foreach (var Customer in Customers)
+                        {
+                            @* De (Guid?) cast is hier weggehaald *@
+                            <MudSelectItem Value="@Customer.CustomerId">@Customer.CustomerName</MudSelectItem>
+                        }
+
                         <MudSelectItem Value="@(Guid.NewGuid())">Klant A (Demo)</MudSelectItem>
                         <MudSelectItem Value="@(Guid.NewGuid())">Klant B (Demo)</MudSelectItem>
                     </MudSelect>
+
                     <div class="d-flex justify-end mt-1">
                         <MudButton Variant="Variant.Text"
                                    Color="Color.Primary"
@@ -111,33 +124,44 @@
 
     private MudForm Form;
     private bool IsFormValid;
-    
-    // Jouw DTO (Zorg dat deze in je Shared project staat)
-    private SalesConversationCreateDto ConversationDto = new();
+
+    private List<CustomerDto> Customers = new List<CustomerDto>();
+
+    private CreateConversationDto Conversation = new();
+    private CancellationTokenSource TokenSource { get; set; } = new();
+
 
     // Helpers voor de Date/Time pickers
     private DateTime? SelectedDate = DateTime.Today;
     private TimeSpan? SelectedTime = DateTime.Now.TimeOfDay;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+		await GetCompanies();
         // Koppel automatisch de medewerker ID aan de nieuwe opname
         if (UserProfile != null)
         {
-            ConversationDto.SalesUserId = UserProfile.UserId; // De GUID uit je eigen tabel
+            Conversation.SalesUserId = UserProfile.UserId.Value; // De GUID uit je eigen tabel
         }
+
+
+    }
+    private async Task GetCompanies()
+    {
+        Customers = await CompanyService.GetCustomerAsync(TokenSource.Token);
+        
     }
 
     private async Task HandleSave()
     {
-        await Form.Validate();
+        
 
         if (IsFormValid)
         {
             // Combineer datum en tijd
             if (SelectedDate.HasValue && SelectedTime.HasValue)
             {
-                ConversationDto.MeetingDate = SelectedDate.Value.Add(SelectedTime.Value);
+                Conversation.MeetingDate = SelectedDate.Value.Add(SelectedTime.Value);
             }
 
             // TODO: API Call naar je tussenlaag om op te slaan in Dataverse
@@ -168,24 +192,23 @@
         if (!Result.Canceled && Result.Data is Guid NewCustomerId)
         {
             // 1. TODO: Ververs hier je lokale lijst met klanten door je REST API opnieuw aan te roepen.
-            // await LoadCustomersAsync();
+            await GetCompanies();
 
             // 2. Selecteer direct de zojuist aangemaakte klant in de dropdown
-            ConversationDto.CustomerId = NewCustomerId;
+            Conversation.CompanyId = NewCustomerId;
         
             // Geef de UI een seintje dat de geselecteerde waarde is aangepast
             StateHasChanged();
         
-            Snackbar.Add("Klant succesvol aangemaakt en geselecteerd!", Severity.Success);
+            Snackbar.Add("New customer had been created en selected!", Severity.Success);
         }
     }
 
-    // Placeholder voor de data-structuur
-    public class SalesConversationCreateDto
+   
+
+    public void Dispose()
     {
-        public string Title { get; set; }
-        public Guid? CustomerId { get; set; }
-        public Guid? SalesUserId { get; set; }
-        public DateTime MeetingDate { get; set; } = DateTime.Now;
+        TokenSource.Cancel();
+        TokenSource.Dispose();
     }
 }

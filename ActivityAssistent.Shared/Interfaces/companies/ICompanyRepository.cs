@@ -13,5 +13,6 @@ namespace ActivityAssistent.Shared.Interfaces.companies
         Task UpdateAsync(Company Company, CancellationToken Token);
         Task DeleteAsync(Guid CompanyId, CancellationToken Token);
         Task<string> GetByNameAsync(string Name, CancellationToken Token);
+        Task<List<Company>> GetCustomerAsync(CancellationToken Token);
     }
 }

@@ -34,7 +34,28 @@ namespace ActivityAssistent.Api.Services.Companies
             throw new NotImplementedException();
         }
 
+        public async Task<List<CustomerDto>> GetCustomerAsync(CancellationToken Token)
+        {
+            var Customers = await CompanyRepository.GetCustomerAsync(Token);
+            List<CustomerDto> CustomerDtos = new List<CustomerDto>();
+            foreach (var Customer in Customers)
+            {
+                CustomerDtos.Add(Customer.ToCustomerDto());
+            }
+            return CustomerDtos;
+        }
+
         public Task UpdateCompanyAsync(CompanyDto Company, CancellationToken Token)
+        {
+            throw new NotImplementedException();
+        }
+
+        System.Threading.Tasks.Task ICompanyService.DeleteCompanyAsync(Guid CompanyId, CancellationToken Token)
+        {
+            throw new NotImplementedException();
+        }
+
+        System.Threading.Tasks.Task ICompanyService.UpdateCompanyAsync(CompanyDto Company, CancellationToken Token)
         {
             throw new NotImplementedException();
         }

@@ -27,5 +27,20 @@ namespace ActivityAssistent.Api.Controllers
             
         }
 
+        [HttpGet("GetCustomers")]
+        public async Task<IActionResult> GetCustomerAsync(CancellationToken Token)
+        {
+            try
+            {
+                var result = await companyService.GetCustomerAsync(Token);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An Error happend while fetching customers: {ex}");
+                return BadRequest(ex);
+            }
+        }
+
     }
 }

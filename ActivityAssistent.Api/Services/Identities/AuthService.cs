@@ -62,10 +62,10 @@ namespace ActivityAssistent.Api.Services
 
         }
 
-        public Task LogoutAsync(CancellationToken Token = default)
-        {
-            throw new NotImplementedException();
-        }
+        //public async Task LogoutAsync(CancellationToken Token = default)
+        //{
+        //    throw new NotImplementedException();
+        //}
 
         private string GenerateJwtToken(UserAuthDto user)
         {
@@ -92,6 +92,11 @@ namespace ActivityAssistent.Api.Services
             var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
+        }
+
+        System.Threading.Tasks.Task IAuthService.LogoutAsync(CancellationToken Token)
+        {
+            throw new NotImplementedException();
         }
     }
 }
