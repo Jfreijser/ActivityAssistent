@@ -1,25 +1,16 @@
 ﻿using ActivityAssistent.Shared.Dtos.Conversations;
-using ActivityAssistent.Shared.Interfaces.Conversations;
 using Microsoft.PowerPlatform.Dataverse.Client;
 using Domain = ActivityAssistent.Shared.Dtos.Conversations;
 
 namespace ActivityAssistent.Api.Infrastructure.Repositories.DataverseRepository
 {
-    public class ConversationRepository(IOrganizationServiceAsync dataverseClient) : IConversationRepository
+    public class DataaverseConversationRepository(IOrganizationServiceAsync dataverseClient) 
     {
         public async Task<Guid> CreateAsync(CreateConversationDto Conversation, CancellationToken Token)
         {
-            using var Context = new DataverseContext(dataverseClient);
-            var ConversationEntity = new cre7e_SalesConversation
-            {
-                Id = Guid.NewGuid(),
-                cre7e_Title = Conversation.Title
-            };
-            Context.AddObject(ConversationEntity);
-            Context.SaveChanges();
-            return ConversationEntity.Id;
+            throw new NotImplementedException();
         }
-            
+
 
         public Task<bool> ExistsAsync(Guid ConversationId, CancellationToken Token)
         {

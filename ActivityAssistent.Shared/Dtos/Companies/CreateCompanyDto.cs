@@ -9,12 +9,14 @@ namespace ActivityAssistent.Shared.Dtos.Companies
     {
         [Required(ErrorMessage = "Company Name is required.")]
         [StringLength(100, ErrorMessage = "Company Name cannot exceed 100 characters.")]
-        public string CompanyName { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+
+        
 
 
         [Required(ErrorMessage = "Email Address is required.")]
         [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
-        public string EmailAddress { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
 
 
         [Required(ErrorMessage = "Phone Number is required.")]
@@ -28,6 +30,10 @@ namespace ActivityAssistent.Shared.Dtos.Companies
 
         [Required(ErrorMessage = "Address is required.")]
         public string Address { get; set; } = string.Empty;
+
+        public Guid OwnerUserId { get; set;  }
+
+        public DateTime CreatedOn { get; set; }
 
 
     }

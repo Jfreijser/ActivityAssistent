@@ -1,5 +1,5 @@
-﻿using ActivityAssistent.Shared.Dtos.Companies;
-using ActivityAssistent.Shared.Interfaces.companies;
+﻿using ActivityAssistent.Api.Interfaces.companies;
+using ActivityAssistent.Shared.Dtos.Companies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,7 +32,7 @@ namespace ActivityAssistent.Api.Controllers
         {
             try
             {
-                var result = await companyService.GetCustomerAsync(Token);
+                var result = await companyService.GetCustomerNamesAsync(Token);
                 return Ok(result);
             }
             catch (Exception ex)

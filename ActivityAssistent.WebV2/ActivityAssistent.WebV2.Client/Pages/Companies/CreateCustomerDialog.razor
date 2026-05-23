@@ -1,6 +1,6 @@
-﻿@using ActivityAssistent.Shared.Interfaces.companies
+﻿@using ActivityAssistent.Shared.Dtos.Companies
+@using ActivityAssistent.WebV2.Client.Interfaces.companies
 @using MudBlazor
-@using ActivityAssistent.Shared.Dtos.Companies
 @inject ISnackbar Snackbar
 @inject ICompanyService CustomerService
 @implements IDisposable
@@ -26,8 +26,8 @@
                     <MudTextField Label="Company Name"
                                   Variant="Variant.Outlined"
                                   MaxLength="100"
-                                  For="@(() => Model.CompanyName)"
-                                  @bind-Value="Model.CompanyName" />
+                                  For="@(() => Model.Name)"
+                                  @bind-Value="Model.Name" />
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
@@ -35,8 +35,8 @@
                                   Variant="Variant.Outlined"
                                   InputType="InputType.Email"
                                   MaxLength="100"
-                                  For="@(() => Model.EmailAddress)"
-                                  @bind-Value="Model.EmailAddress" />
+                                  For="@(() => Model.Email)"
+                                  @bind-Value="Model.Email" />
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
@@ -97,6 +97,7 @@
     {
         try
         {
+			Model.CreatedOn = DateTime.Now;
             var CompanyDto = await CustomerService.CreateCompanyAsync(Model, TokenSource.Token);
             
             if (CompanyDto == null || CompanyDto.CompanyId == Guid.Empty)

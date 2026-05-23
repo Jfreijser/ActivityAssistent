@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using ActivityAssistent.Shared.Dtos.Ai;
 
-namespace ActivityAssistent.Shared.Interfaces.Ai
+namespace ActivityAssistent.Api.Interfaces.Ai
 {
     public  interface IAiMeetingAnalyzer
     {

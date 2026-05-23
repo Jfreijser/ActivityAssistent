@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ActivityAssistent.Shared.Interfaces.Audio
+namespace ActivityAssistent.Api.Interfaces.Audio
 {
     public  interface IAudioRecorderService
     {

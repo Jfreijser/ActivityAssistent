@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using ActivityAssistent.Shared.Dtos.Conversations;
 
-namespace ActivityAssistent.Shared.Interfaces.Conversations
+namespace ActivityAssistent.Api.Interfaces.Conversations
 {
     public interface IConversationService
     {

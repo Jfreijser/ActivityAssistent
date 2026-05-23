@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using ActivityAssistent.Shared.Dtos.Companies;
 
-namespace ActivityAssistent.Shared.Interfaces.companies
+namespace ActivityAssistent.WebV2.Client.Interfaces.companies
 {
     public interface ICompanyService
     {

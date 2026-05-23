@@ -2,9 +2,8 @@
 using System.Security.Claims;
 using System.Text;
 using ActivityAssistent.Api.Infrastructure.Repositories; //
+using ActivityAssistent.Api.Interfaces.Identity;
 using ActivityAssistent.Shared.Dtos.Identity;
-using ActivityAssistent.Shared.Interfaces;
-using ActivityAssistent.Shared.Interfaces.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.PowerPlatform.Dataverse.Client;
@@ -62,6 +61,11 @@ namespace ActivityAssistent.Api.Services
 
         }
 
+        public Task LogoutAsync(CancellationToken Token = default)
+        {
+            throw new NotImplementedException();
+        }
+
         //public async Task LogoutAsync(CancellationToken Token = default)
         //{
         //    throw new NotImplementedException();
@@ -94,9 +98,6 @@ namespace ActivityAssistent.Api.Services
             return tokenHandler.WriteToken(token);
         }
 
-        System.Threading.Tasks.Task IAuthService.LogoutAsync(CancellationToken Token)
-        {
-            throw new NotImplementedException();
-        }
+        
     }
 }

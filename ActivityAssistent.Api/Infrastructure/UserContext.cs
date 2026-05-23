@@ -1,4 +1,4 @@
-﻿using ActivityAssistent.Shared.Interfaces.Identity;
+﻿using ActivityAssistent.Api.Interfaces.Identity;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 

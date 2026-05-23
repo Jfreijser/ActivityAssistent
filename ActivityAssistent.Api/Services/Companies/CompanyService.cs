@@ -1,25 +1,29 @@
-﻿using ActivityAssistent.Api.Mappings;
+﻿using ActivityAssistent.Api.Infrastructure;
+using ActivityAssistent.Api.Interfaces.companies;
+using ActivityAssistent.Api.Interfaces.Identity;
+using ActivityAssistent.Api.Mappings;
 using ActivityAssistent.Shared.Dtos.Companies;
-using ActivityAssistent.Shared.Interfaces.companies;
 
 namespace ActivityAssistent.Api.Services.Companies
 {
-    public class CompanyService (ICompanyRepository CompanyRepository) : ICompanyService
+    public class CompanyService (ICompanyRepository CompanyRepository, IUserContext UserContext) : ICompanyService
     {
         public async Task<CompanyDto> CreateCompanyAsync(CreateCompanyDto CompanyDto, CancellationToken Token)
         {
-            var Exist =  await CompanyRepository.GetByNameAsync(CompanyDto.CompanyName, Token);
+            var Exist =  await CompanyRepository.GetByNameAsync(CompanyDto.Name, Token);
             if (Exist is not null)
             {
                 throw new Exception("Company with the same name already exists.");
             }
 
-            var NewCompany = CompanyDto.ToEntity();
-            var CreatedCompany = await CompanyRepository.CreateAsync(NewCompany, Token);
-            return CreatedCompany.ToDto();
+            CompanyDto.OwnerUserId = UserContext.CurrentUserId;
+            
+            var Id = await CompanyRepository.CreateAsync(CompanyDto, Token);
+
+            return await CompanyRepository.GetByIdAsync(Id, Token);
         }
 
-        public Task DeleteCompanyAsync(Guid CompanyId, CancellationToken Token)
+        public Task<bool> DeleteCompanyAsync(Guid CompanyId, CancellationToken Token)
         {
             throw new NotImplementedException();
         }
@@ -29,33 +33,17 @@ namespace ActivityAssistent.Api.Services.Companies
             throw new NotImplementedException();
         }
 
-        public Task<CompanyDto> GetCompanyByIdAsync(Guid CompanyId, CancellationToken Token)
+        public async Task<CompanyDto> GetCompanyByIdAsync(Guid CompanyId, CancellationToken Token)
+        {
+            return await CompanyRepository.GetByIdAsync(CompanyId, Token);
+        }
+
+        public Task<List<CompanyNames>> GetCustomerNamesAsync(CancellationToken Token)
         {
             throw new NotImplementedException();
         }
 
-        public async Task<List<CustomerDto>> GetCustomerAsync(CancellationToken Token)
-        {
-            var Customers = await CompanyRepository.GetCustomerAsync(Token);
-            List<CustomerDto> CustomerDtos = new List<CustomerDto>();
-            foreach (var Customer in Customers)
-            {
-                CustomerDtos.Add(Customer.ToCustomerDto());
-            }
-            return CustomerDtos;
-        }
-
-        public Task UpdateCompanyAsync(CompanyDto Company, CancellationToken Token)
-        {
-            throw new NotImplementedException();
-        }
-
-        System.Threading.Tasks.Task ICompanyService.DeleteCompanyAsync(Guid CompanyId, CancellationToken Token)
-        {
-            throw new NotImplementedException();
-        }
-
-        System.Threading.Tasks.Task ICompanyService.UpdateCompanyAsync(CompanyDto Company, CancellationToken Token)
+        public Task<bool> UpdateCompanyAsync(CompanyDto Company, CancellationToken Token)
         {
             throw new NotImplementedException();
         }

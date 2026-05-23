@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using ActivityAssistent.Shared.Dtos.Contacts;
 
-namespace ActivityAssistent.Shared.Interfaces.Contacts
+namespace ActivityAssistent.WebV2.Client.Interfaces.Contacts
 {
     public interface IContactService
     {

@@ -1,5 +1,5 @@
-﻿using ActivityAssistent.Shared.Dtos.Identity;
-using ActivityAssistent.Shared.Interfaces.Identity;
+﻿using ActivityAssistent.Api.Interfaces.Identity;
+using ActivityAssistent.Shared.Dtos.Identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;

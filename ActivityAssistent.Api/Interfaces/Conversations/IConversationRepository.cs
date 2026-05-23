@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.VisualBasic;
 using ActivityAssistent.Shared.Dtos.Conversations;
-namespace ActivityAssistent.Shared.Interfaces.Conversations
+namespace ActivityAssistent.Api.Interfaces.Conversations
 {
     public interface IConversationRepository
     {
@@ -23,5 +23,6 @@ namespace ActivityAssistent.Shared.Interfaces.Conversations
 
         // 6. Optioneel: Controleren of een offline gebufferd gesprek al in Dataverse bestaat
         Task<bool> ExistsAsync(Guid ConversationId, CancellationToken Token);
+        
     }
 }

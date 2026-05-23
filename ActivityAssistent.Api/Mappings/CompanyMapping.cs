@@ -28,8 +28,8 @@ namespace ActivityAssistent.Api.Mappings
         {
             return new Company
             {
-                Name = Dto.CompanyName,
-                Email = Dto.EmailAddress,
+                Name = Dto.Name,
+                Email = Dto.Email,
                 PhoneNumber = Dto.PhoneNumber,
                 City = Dto.City,
                 Address = Dto.Address

@@ -1,5 +1,5 @@
-﻿using ActivityAssistent.Shared.Dtos.Conversations;
-using ActivityAssistent.Shared.Interfaces.Conversations;
+﻿using ActivityAssistent.Api.Interfaces.Conversations;
+using ActivityAssistent.Shared.Dtos.Conversations;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ActivityAssistent.Api.Controllers

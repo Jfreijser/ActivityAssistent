@@ -4,75 +4,22 @@ using ActivityAssistent.Api.Configuration;
 using ActivityAssistent.Api.Infrastructure;
 using ActivityAssistent.Api.Services;
 using ActivityAssistent.Api.Services.Conversations;
-using ActivityAssistent.Shared.Interfaces.Conversations;
-using ActivityAssistent.Shared.Interfaces.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.Options;
-using Microsoft.Identity.Client;
-using Microsoft.Identity.Web;
-using Microsoft.PowerPlatform.Dataverse.Client;
-using Microsoft.ReportingServices.ReportProcessing.OnDemandReportObjectModel;
-using Microsoft.Xrm.Sdk;
-using Microsoft.Xrm.Sdk.Query;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using ActivityAssistent.Api.Infrastructure.Repositories.DataverseRepository;
-using ActivityAssistent.Shared.Interfaces.companies;
 using ActivityAssistent.Api.Services.Companies;
+using ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository;
+using ActivityAssistent.Api.Interfaces.companies;
+using ActivityAssistent.Api.Interfaces.Conversations;
+using ActivityAssistent.Api.Interfaces.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var DataverseSettings = builder.Configuration.GetSection("DataverseConfig");
-builder.Services.Configure<DataverseOptions>(DataverseSettings);
-
-builder.Services.AddScoped<IOrganizationServiceAsync>(ServiceProvider =>
-{
-    var Config = ServiceProvider.GetRequiredService<IOptions<DataverseOptions>>().Value;
-
-    
-    Console.WriteLine($"BaseUrl: {Config.BaseUrl}");
-    Console.WriteLine($"ClientId: {Config.ClientId}");
-    Console.WriteLine($"ClientSecret: {(string.IsNullOrEmpty(Config.ClientSecret) ? "MISSING" : "PRESENT")}");
-    Console.WriteLine($"TenantId: {Config.TenantId}");
-
-    string ClientId = $"{Config.ClientId}";
-    string TenantId = $"{Config.TenantId}";
-    string ClientSecret = $"{Config.ClientSecret}";
-    // Voor Microsoft Graph is dit bijvoorbeeld: https://graph.microsoft.com/.default
-    string resourceUrl = Config.BaseUrl.EndsWith("/") ? Config.BaseUrl : Config.BaseUrl + "/";
-    string[] Scopes = new[] { $"{resourceUrl}.default" };
-
-    // 1. Initialiseer de Confidential Client
-    IConfidentialClientApplication ConfidentialApp = ConfidentialClientApplicationBuilder.Create(ClientId)
-        .WithTenantId(TenantId)
-        .WithClientSecret(ClientSecret)
-        .Build();
-    ServiceClient serviceClient;
-    try
-    {
-
-         serviceClient = new ServiceClient(
-            tokenProviderFunction: async (string crmUrl) =>
-            {
-                var authResult = await ConfidentialApp.AcquireTokenForClient(Scopes).ExecuteAsync();
-                return authResult.AccessToken;
-            },
-            instanceUrl: new Uri(Config.BaseUrl)
-        );
-
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine("DATAVERSE ERROR: " + ex.Message);
-        if (ex.InnerException != null) Console.WriteLine($"Inner: {ex.InnerException.Message}");
-        throw;
-    }
-
-    
-    return serviceClient;
+//var DataverseSettings = builder.Configuration.GetSection("DataverseConfig");
+builder.Services.AddScoped<IDbConnectionFactory, SqlConnectionFactory>();
 
 
-});
 
 //builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 //    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
@@ -115,10 +62,13 @@ builder.Services.AddCors(options =>
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserContext, UserContext>();
-builder.Services.AddScoped<ICompanyRepository, DataverseCompanyRepository>();
-builder.Services.AddScoped<ICompanyService, CompanyService>();
-builder.Services.AddScoped<IUserRepository, DataverseUserRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IConversationRepository, ConversationRepository>();
+builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
+//builder.Services.AddScoped<ICompanyRepository, DataverseCompanyRepository>();
+builder.Services.AddScoped<ICompanyService, CompanyService>();
+//builder.Services.AddScoped<IUserRepository, DataverseUserRepository>();
+//builder.Services.AddScoped<IConversationRepository, ConversationRepository>();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
 

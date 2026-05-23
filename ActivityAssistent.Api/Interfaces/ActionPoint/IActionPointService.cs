@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using ActivityAssistent.Shared.Dtos.ActionPoints;
 
-namespace ActivityAssistent.Shared.Interfaces.ActionPoint
+namespace ActivityAssistent.Api.Interfaces.ActionPoint
 {
     public interface IActionPointService
     {

@@ -1,7 +1,7 @@
 ﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using ActivityAssistent.Shared.Dtos.Identity;
-using ActivityAssistent.Shared.Interfaces.Identity;
+using ActivityAssistent.WebV2.Client.Interfaces.Identity;
 using Microsoft.JSInterop;
 
 namespace ActivityAssistent.WebV2.Client.Services.AuthService

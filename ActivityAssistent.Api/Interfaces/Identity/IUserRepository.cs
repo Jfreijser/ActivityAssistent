@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using ActivityAssistent.Shared.Dtos.Identity;
 
-namespace ActivityAssistent.Shared.Interfaces.Identity
+namespace ActivityAssistent.Api.Interfaces.Identity
 {
     public interface IUserRepository
     {

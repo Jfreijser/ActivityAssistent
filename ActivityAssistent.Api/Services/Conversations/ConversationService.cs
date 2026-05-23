@@ -1,12 +1,12 @@
-﻿using ActivityAssistent.Shared.Dtos.Conversations;
-using ActivityAssistent.Shared.Interfaces.companies;
-using ActivityAssistent.Shared.Interfaces.Conversations;
+﻿using ActivityAssistent.Api.Interfaces.companies;
+using ActivityAssistent.Api.Interfaces.Conversations;
+using ActivityAssistent.Shared.Dtos.Conversations;
 using Microsoft.PowerPlatform.Dataverse.Client;
 using Microsoft.Xrm.Sdk;
 
 namespace ActivityAssistent.Api.Services.Conversations
 {
-    public class ConversationService(IOrganizationServiceAsync DataverseClient, ICompanyRepository CompanyRepository) : IConversationService
+    public class ConversationService(IConversationRepository ConversationRepository, ICompanyRepository CompanyRepository) : IConversationService
     {
         public async Task<ConversationDto> CreateConversationAsync(CreateConversationDto Conversation, CancellationToken Token)
         {
@@ -52,14 +52,6 @@ namespace ActivityAssistent.Api.Services.Conversations
             throw new NotImplementedException();
         }
 
-        System.Threading.Tasks.Task IConversationService.DeleteConversationAsync(Guid ConversationId, CancellationToken Token)
-        {
-            throw new NotImplementedException();
-        }
-
-        System.Threading.Tasks.Task IConversationService.UploadAudioAsync(Guid ConversationId, byte[] AudioData, CancellationToken Token)
-        {
-            throw new NotImplementedException();
-        }
+        
     }
 }

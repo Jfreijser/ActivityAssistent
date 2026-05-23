@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 using ActivityAssistent.Shared.Dtos.Companies;
-using ActivityAssistent.Shared.Interfaces.companies;
+using ActivityAssistent.WebV2.Client.Interfaces.companies;
 
 namespace ActivityAssistent.WebV2.Client.Services.Companies
 {

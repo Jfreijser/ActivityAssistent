@@ -1,7 +1,7 @@
 ﻿using System.Net.Http.Json;
 using ActivityAssistent.Shared.Dtos.Companies;
 using ActivityAssistent.Shared.Dtos.Conversations;
-using ActivityAssistent.Shared.Interfaces.Conversations;
+using ActivityAssistent.WebV2.Client.Interfaces.Conversations;
 
 namespace ActivityAssistent.WebV2.Client.Services.ConversationService
 {

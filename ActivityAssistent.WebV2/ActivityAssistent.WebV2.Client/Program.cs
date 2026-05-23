@@ -1,6 +1,7 @@
-using ActivityAssistent.Shared.Interfaces.companies;
-using ActivityAssistent.Shared.Interfaces.Conversations;
-using ActivityAssistent.Shared.Interfaces.Identity;
+
+using ActivityAssistent.WebV2.Client.Interfaces.companies;
+using ActivityAssistent.WebV2.Client.Interfaces.Conversations;
+using ActivityAssistent.WebV2.Client.Interfaces.Identity;
 using ActivityAssistent.WebV2.Client.Services;
 using ActivityAssistent.WebV2.Client.Services.AuthService;
 using ActivityAssistent.WebV2.Client.Services.Companies;
