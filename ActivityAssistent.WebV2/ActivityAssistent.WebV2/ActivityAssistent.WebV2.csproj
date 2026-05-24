@@ -10,6 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\ActivityAssistent.Shared\ActivityAssistent.Shared.csproj" />
     <ProjectReference Include="..\ActivityAssistent.WebV2.Client\ActivityAssistent.WebV2.Client.csproj" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.8" />
   </ItemGroup>
 

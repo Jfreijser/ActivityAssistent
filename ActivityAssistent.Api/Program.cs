@@ -1,50 +1,42 @@
 using System.Configuration;
 using System.Net.NetworkInformation;
+using System.Text;
 using ActivityAssistent.Api.Configuration;
 using ActivityAssistent.Api.Infrastructure;
-using ActivityAssistent.Api.Services;
-using ActivityAssistent.Api.Services.Conversations;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using ActivityAssistent.Api.Infrastructure.Repositories.DataverseRepository;
-using ActivityAssistent.Api.Services.Companies;
 using ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository;
+using ActivityAssistent.Api.Infrastructure.Repositories.DataverseRepository;
 using ActivityAssistent.Api.Interfaces.companies;
 using ActivityAssistent.Api.Interfaces.Conversations;
 using ActivityAssistent.Api.Interfaces.Identity;
+using ActivityAssistent.Api.Services;
+using ActivityAssistent.Api.Services.Companies;
+using ActivityAssistent.Api.Services.Conversations;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
 //var DataverseSettings = builder.Configuration.GetSection("DataverseConfig");
 builder.Services.AddScoped<IDbConnectionFactory, SqlConnectionFactory>();
 
-
-
-//builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-//    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
-
-var JwtSettings = builder.Configuration.GetSection("Jwt");
-var Key = Encoding.ASCII.GetBytes(JwtSettings["Key"]!);
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(Options =>
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = JwtSettings["Issuer"],
-        ValidAudience = JwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Key)
-    };
-});
+        Options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "ZetHierEenFallbackSleutelVoorDeZekerheid123!"))
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 
 string MyAllowSpecificOrigins = "MyCorsPolicy";
@@ -55,7 +47,8 @@ builder.Services.AddCors(options =>
         {
             policy.WithOrigins("https://localhost:7142", "https://localhost:7000") // Voeg hier de URL van je frontend toe
                   .AllowAnyHeader()
-                  .AllowAnyMethod();
+                  .AllowAnyMethod()
+                  .AllowCredentials();
         });
 });
 

@@ -13,7 +13,7 @@
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
     <MudPaper Elevation="4" Class="pa-6" Style="border-radius: 16px;">
-        
+
         @* Header met terug-knop *@
         <div class="d-flex align-center mb-6">
             <MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
@@ -28,7 +28,7 @@
 
         <MudForm @ref="Form" @bind-IsValid="@IsFormValid">
             <MudGrid Spacing="3">
-                
+
                 @* 1. Onderwerp / Titel *@
                 <MudItem xs="12">
                     <MudTextField T="string"
@@ -39,6 +39,7 @@
                                   Variant="Variant.Outlined"
                                   @bind-Value="Conversation.Title" />
                 </MudItem>
+
                 @* 2. Klant Selectie (Lookup naar Account/Contact) *@
                 <MudItem xs="12">
                     <MudSelect T="Guid"
@@ -49,16 +50,16 @@
                                AnchorOrigin="Origin.BottomCenter"
                                @bind-Value="Conversation.CompanyId">
 
-                        <MudSelectItem Value="@(Guid.Empty)">-- Select a Customer --</MudSelectItem>
+                        <MudSelectItem Value="@(Guid.Empty)">-- Selecteer een Klant --</MudSelectItem>
 
                         @foreach (var Customer in Customers)
                         {
-                            @* De (Guid?) cast is hier weggehaald *@
-                            <MudSelectItem Value="@Customer.CustomerId">@Customer.CustomerName</MudSelectItem>
+                            <MudSelectItem Value="@Customer.CompanyId">@Customer.Name</MudSelectItem>
                         }
 
-                        <MudSelectItem Value="@(Guid.NewGuid())">Klant A (Demo)</MudSelectItem>
-                        <MudSelectItem Value="@(Guid.NewGuid())">Klant B (Demo)</MudSelectItem>
+                        @* Vaste nep-ID's om de oneindige loop te voorkomen! *@
+                        <MudSelectItem Value="@(new Guid("11111111-1111-1111-1111-111111111111"))">Klant A (Demo)</MudSelectItem>
+                        <MudSelectItem Value="@(new Guid("22222222-2222-2222-2222-222222222222"))">Klant B (Demo)</MudSelectItem>
                     </MudSelect>
 
                     <div class="d-flex justify-end mt-1">
@@ -125,11 +126,9 @@
     private MudForm Form;
     private bool IsFormValid;
 
-    private List<CustomerDto> Customers = new List<CustomerDto>();
-
+    private List<CompanyNames> Customers = new List<CompanyNames>();
     private CreateConversationDto Conversation = new();
     private CancellationTokenSource TokenSource { get; set; } = new();
-
 
     // Helpers voor de Date/Time pickers
     private DateTime? SelectedDate = DateTime.Today;
@@ -137,25 +136,30 @@
 
     protected override async Task OnInitializedAsync()
     {
-		await GetCompanies();
-        // Koppel automatisch de medewerker ID aan de nieuwe opname
-        if (UserProfile != null)
+        try
         {
-            Conversation.SalesUserId = UserProfile.UserId.Value; // De GUID uit je eigen tabel
+            await GetCompanies();
+
+            // Koppel automatisch de medewerker ID aan de nieuwe opname, veilig genest
+            if (UserProfile != null && UserProfile.UserId.HasValue)
+            {
+                Conversation.SalesUserId = UserProfile.UserId.Value;
+            }
         }
-
-
+        catch (Exception Ex)
+        {
+            // Vangt een eventuele stille crash op en toont hem in je Visual Studio Output!
+            Console.WriteLine($"CRASH TIJDENS LADEN PAGINA: {Ex.Message}");
+        }
     }
+
     private async Task GetCompanies()
     {
         Customers = await CompanyService.GetCustomerAsync(TokenSource.Token);
-        
     }
 
     private async Task HandleSave()
     {
-        
-
         if (IsFormValid)
         {
             // Combineer datum en tijd
@@ -165,10 +169,10 @@
             }
 
             // TODO: API Call naar je tussenlaag om op te slaan in Dataverse
-            // var result = await SalesService.CreateAsync(ConversationDto);
+            // var Result = await SalesService.CreateAsync(Conversation);
 
             Snackbar.Add("Gesprek succesvol klaargezet!", Severity.Success);
-            
+
             // Ga terug naar het overzicht
             NavManager.NavigateTo("/SalesConversation/SalesConversationIndex");
         }
@@ -191,20 +195,18 @@
         // Controleer of de gebruiker niet op annuleren heeft gedrukt
         if (!Result.Canceled && Result.Data is Guid NewCustomerId)
         {
-            // 1. TODO: Ververs hier je lokale lijst met klanten door je REST API opnieuw aan te roepen.
+            // 1. Ververs hier je lokale lijst met klanten door je REST API opnieuw aan te roepen.
             await GetCompanies();
 
             // 2. Selecteer direct de zojuist aangemaakte klant in de dropdown
             Conversation.CompanyId = NewCustomerId;
-        
+
             // Geef de UI een seintje dat de geselecteerde waarde is aangepast
             StateHasChanged();
-        
-            Snackbar.Add("New customer had been created en selected!", Severity.Success);
+
+            Snackbar.Add("Nieuwe klant aangemaakt en geselecteerd!", Severity.Success);
         }
     }
-
-   
 
     public void Dispose()
     {

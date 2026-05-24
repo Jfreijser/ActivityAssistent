@@ -1,57 +1,66 @@
 ﻿@page "/"
-@using ActivityAssistent.Shared.Dtos.Identity
-@using ActivityAssistent.WebV2.Client.Interfaces.Identity
+@* Deze tag beveiligt de pagina. Gasten worden hier nu geweigerd. *@
+@using Microsoft.AspNetCore.Authorization
+@using ActivityAssistent.WebV2
+@attribute [Authorize]
+@inject AuthenticationStateProvider AuthStateProvider
 @using ActivityAssistent.Shared.Dtos
 @using MudBlazor
-@inject IAuthService AuthService
 
 <PageTitle>Dashboard - ActivityAssistent</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-8">
     <MudText Typo="Typo.h3" GutterBottom="true" Class="mb-6">Sales Dashboard</MudText>
 
-    @if (UserProfile == null)
-    {
-        @* Staat 1: De API-call in MainLayout loopt nog. We tonen de loader. *@
-        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
-    }
-    else if (UserProfile.UserId == null)
-    {
-        @* Staat 2: De API is klaar, maar de gebruiker is een gast (niet ingelogd). *@
-        <MudAlert Severity="Severity.Info" Variant="Variant.Filled" Class="my-4">
-            Welcome to Activity Assistant. Please log in using the button in the top bar to access your sales insights.
-        </MudAlert>
-    }
-    else
-    {
-        @* Staat 3: De salesmedewerker is succesvol ingelogd! Toon het echte dashboard. *@
-        <MudGrid>
-            <!-- Welkomstkaart -->
-            <MudItem xs="12" sm="6" md="4">
-                <MudCard Elevation="4" Class="rounded-lg">
-                    <MudCardHeader>
-                        <CardHeaderContent>
-                            <MudText Typo="Typo.h5">Welcome back!</MudText>
-                            <MudText Typo="Typo.subtitle1" Color="Color.Primary">@UserProfile.FullName</MudText>
-                        </CardHeaderContent>
-                        <CardHeaderActions>
-                            <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Default" />
-                        </CardHeaderActions>
-                    </MudCardHeader>
-                    <MudCardContent>
-                        <MudText Typo="Typo.body2">Role: @UserProfile.JobTitle</MudText>
-                        <MudText Typo="Typo.body2">ID: @UserProfile.UserId</MudText>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="4" Class="rounded-lg">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h5">Welcome back!</MudText>
+                        <MudText Typo="Typo.subtitle1" Color="Color.Primary">@UserName</MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Default" />
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudText Typo="Typo.body2">Your sales overview and action points are loading...</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
 
-            <!-- Rest van je MudGrid met acties en statistieken... -->
-        </MudGrid>
-    }
+    </MudGrid>
 </MudContainer>
 
 @code {
-    // PascalCase variabelen
-    [CascadingParameter]
-    public UserProfileDto? UserProfile { get; set; }
+    private string UserName = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        AuthStateProvider.AuthenticationStateChanged += HandleAuthenticationStateChanged;
+        await LoadUserState();
+    }
+
+    private async Task LoadUserState()
+    {
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = state.User;
+
+        if (user.Identity is { IsAuthenticated: true })
+        {
+            UserName = user.Identity.Name ?? "Sales Professional";
+            StateHasChanged();
+        }
+    }
+
+    private void HandleAuthenticationStateChanged(Task<AuthenticationState> task)
+    {
+        InvokeAsync(LoadUserState);
+    }
+
+    public void Dispose()
+    {
+        AuthStateProvider.AuthenticationStateChanged -= HandleAuthenticationStateChanged;
+    }
 }

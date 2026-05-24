@@ -1,62 +1,55 @@
-﻿@using ActivityAssistent.Shared.Dtos.Identity
-@using ActivityAssistent.WebV2.Client.Interfaces.Identity
-@inject IAuthService AuthService
+﻿@page "/login"
+@using Microsoft.AspNetCore.Authorization
+@attribute [AllowAnonymous]
 
-
-<MudDialog>
-    <DialogContent>
-        <MudText Typo="Typo.h5" Align="Align.Center" Color="Color.Primary" Class="mb-4">
-            SalesAssistant Login
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudPaper Elevation="4" Class="pa-8">
+        <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Primary" Class="mb-6">
+            Login
         </MudText>
-        
-        <MudTextField @bind-Value="Email" Label="E-mailadres" Variant="Variant.Outlined" Class="mb-4" />
-        <MudTextField @bind-Value="Password" Label="Wachtwoord" Variant="Variant.Outlined" InputType="InputType.Password" Class="mb-4" />
-        
+
         @if (!string.IsNullOrEmpty(ErrorMessage))
         {
-            <MudAlert Severity="Severity.Error" Dense="true" Class="my-2">@ErrorMessage</MudAlert>
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4">@ErrorMessage</MudAlert>
         }
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">Annuleren</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleLogin" Disabled="@IsLoading">
-            @if (IsLoading)
-            {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
-            }
-            else
-            {
 
+        <form action="/auth/login" method="post">
+
+            <AntiforgeryToken />
+
+            <MudTextField T="string"
+                          Label="E-mailadres"
+                          Variant="Variant.Outlined"
+                          Class="mb-4"
+                          name="Email"
+                          Required="true" />
+
+            <MudTextField T="string"
+                          Label="Wachtwoord"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Password"
+                          Class="mb-6"
+                          name="Password"
+                          Required="true" />
+
+            <MudButton FullWidth="true"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Size="Size.Large"
+                       ButtonType="ButtonType.Submit">
                 <MudText>Inloggen</MudText>
-            }
-        </MudButton>
-    </DialogActions>
-</MudDialog>
+            </MudButton>
+        </form>
+    </MudPaper>
+</MudContainer>
 
 @code {
-    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    // Blazor pikt automatisch de '?error=...' uit de URL op dankzij deze tag
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? ErrorQuery { get; set; }
 
-    private string Email { get; set; } = string.Empty;
-    private string Password { get; set; } = string.Empty;
-    private string ErrorMessage { get; set; } = string.Empty;
-    private bool IsLoading { get; set; } = false;
-
-    private void Cancel() => MudDialog.Cancel();
-
-    private async Task HandleLogin()
-    {
-        ErrorMessage = string.Empty;
-        IsLoading = true;
-        try
-        {
-            var result = await AuthService.LoginAsync(new LoginCredentialsDto { Email = Email, Password = Password }, default);
-            // In plaats van navigeren, sluiten we de dialoog met een "Ok" resultaat
-            MudDialog.Close(DialogResult.Ok(true));
-        }
-        catch (Exception ex)
-        {
-            ErrorMessage = "Fout: " + ex.Message;
-        }
-        finally { IsLoading = false; }
-    }
+    // Bepaal de foutmelding op basis van de URL parameter
+    private string ErrorMessage => ErrorQuery == "InvalidCredentials"
+        ? "Inloggen mislukt. Controleer je gegevens."
+        : string.Empty;
 }

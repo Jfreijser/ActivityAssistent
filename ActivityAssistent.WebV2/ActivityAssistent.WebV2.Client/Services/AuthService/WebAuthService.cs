@@ -1,12 +1,15 @@
 ﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using ActivityAssistent.Shared.Dtos.Identity;
+using ActivityAssistent.WebV2;
 using ActivityAssistent.WebV2.Client.Interfaces.Identity;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.JSInterop;
 
 namespace ActivityAssistent.WebV2.Client.Services.AuthService
 {
-    public class WebAuthService(HttpClient Http, IJSRuntime JsRuntime) : IAuthService
+    public class WebAuthService(HttpClient Http, NavigationManager NavigationManager) : IAuthService
     {
         private const string TokenKey = "AuthToken";
         public async Task<UserProfileDto> GetCurrentProfileAsync(CancellationToken Token = default)
@@ -36,27 +39,7 @@ namespace ActivityAssistent.WebV2.Client.Services.AuthService
            
         }
 
-        public async Task<AuthResultDto> LoginAsync(LoginCredentialsDto Credentials, CancellationToken Token = default)
-        {
-            var Response = await Http.PostAsJsonAsync("api/auth/login", Credentials, Token);
-            if (Response.IsSuccessStatusCode)
-            {
-                var result = await Response.Content.ReadFromJsonAsync<AuthResultDto>(cancellationToken: Token);
-                if (result != null && result.IsSuccess)
-                {
-                    await JsRuntime.InvokeVoidAsync("localStorage.setItem", TokenKey, result.AccessToken);
-                }
-                return result!;
-            }
-            else
-            {
-                var Result = new AuthResultDto()
-                {
-                    IsSuccess = false
-                };
-                return Result;
-            }
-        }
+       
 
         public Task LogoutAsync(CancellationToken Token = default)
         {

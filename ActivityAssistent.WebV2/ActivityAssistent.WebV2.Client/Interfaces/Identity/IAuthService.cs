@@ -8,7 +8,7 @@ namespace ActivityAssistent.WebV2.Client.Interfaces.Identity
     public interface IAuthService
     {
         // Inloggen en een token of bevestiging terugkrijgen
-        Task<AuthResultDto> LoginAsync(LoginCredentialsDto Credentials, CancellationToken Token = default);
+        //Task<AuthResultDto> LoginAsync(LoginCredentialsDto Credentials, CancellationToken Token = default);
 
         // Profiel en persoonlijke instellingen ophalen
         Task<UserProfileDto> GetCurrentProfileAsync(CancellationToken Token = default);

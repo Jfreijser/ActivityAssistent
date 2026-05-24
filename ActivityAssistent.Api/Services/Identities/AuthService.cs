@@ -6,9 +6,6 @@ using ActivityAssistent.Api.Interfaces.Identity;
 using ActivityAssistent.Shared.Dtos.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.PowerPlatform.Dataverse.Client;
-using Microsoft.Xrm.Sdk; // Voor 'Entity' en 'ColumnSet'
-using Microsoft.Xrm.Sdk.Query; // Voor 'ColumnSet'
 
 namespace ActivityAssistent.Api.Services
 {
@@ -73,29 +70,35 @@ namespace ActivityAssistent.Api.Services
 
         private string GenerateJwtToken(UserAuthDto user)
         {
-            var jwtSettings = configuration.GetSection("Jwt");
-            var key = Encoding.ASCII.GetBytes(jwtSettings["Key"]!);
+            var JwtSettings = configuration.GetSection("Jwt");
+            var Key = Encoding.ASCII.GetBytes(JwtSettings["Key"]!);
 
-            var claims = new List<Claim>
+            var Claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()), // Unieke ID uit Dataverse
-                new Claim(JwtRegisteredClaimNames.Name, user.FullName),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()) // Unieke ID voor dit specifieke token
+                // Gebruik ClaimTypes zodat Blazor ze automatisch snapt!
+                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()), // Voor de User.FindFirst(ClaimTypes.NameIdentifier)
+                new Claim(ClaimTypes.Name, user.FullName),                    // Dit vult direct User.Identity.Name in je Blazor menu!
+                new Claim(ClaimTypes.Email, user.Email),
+                
+                // Jti mag wel gewoon JwtRegisteredClaimNames blijven, dat is standaard voor het token ID
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
-            var tokenDescriptor = new SecurityTokenDescriptor
+
+            var TokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddHours(8), // Bepaal hoe lang de klant ingelogd blijft
-                Issuer = jwtSettings["Issuer"],
-                Audience = jwtSettings["Audience"],
+                Subject = new ClaimsIdentity(Claims),
+                Expires = DateTime.UtcNow.AddHours(8),
+                Issuer = JwtSettings["Issuer"],
+                Audience = JwtSettings["Audience"],
                 SigningCredentials = new SigningCredentials(
-            new SymmetricSecurityKey(key),
-            SecurityAlgorithms.HmacSha256Signature) // De versleutelingsmethode
+                    new SymmetricSecurityKey(Key),
+                    SecurityAlgorithms.HmacSha256Signature)
             };
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+
+            var TokenHandler = new JwtSecurityTokenHandler();
+            var Token = TokenHandler.CreateToken(TokenDescriptor);
+
+            return TokenHandler.WriteToken(Token);
         }
 
         

@@ -12,6 +12,6 @@ namespace ActivityAssistent.WebV2.Client.Interfaces.companies
         Task UpdateCompanyAsync(CompanyDto Company, CancellationToken Token);
         Task DeleteCompanyAsync(Guid CompanyId, CancellationToken Token);
         Task<CompanyDto> CreateCompanyAsync(CreateCompanyDto Company, CancellationToken Token);
-        Task<List<CustomerDto>> GetCustomerAsync(CancellationToken Token);
+        Task<List<CompanyNames>> GetCustomerAsync(CancellationToken Token);
     }
 }

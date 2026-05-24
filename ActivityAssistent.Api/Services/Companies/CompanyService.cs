@@ -3,6 +3,7 @@ using ActivityAssistent.Api.Interfaces.companies;
 using ActivityAssistent.Api.Interfaces.Identity;
 using ActivityAssistent.Api.Mappings;
 using ActivityAssistent.Shared.Dtos.Companies;
+using Microsoft.Crm.Sdk.Messages;
 
 namespace ActivityAssistent.Api.Services.Companies
 {
@@ -38,9 +39,20 @@ namespace ActivityAssistent.Api.Services.Companies
             return await CompanyRepository.GetByIdAsync(CompanyId, Token);
         }
 
-        public Task<List<CompanyNames>> GetCustomerNamesAsync(CancellationToken Token)
+        public  async Task<List<CompanyNames>> GetCustomerNamesAsync(CancellationToken Token)
         {
-            throw new NotImplementedException();
+            try
+            {
+
+                var Customers = await CompanyRepository.GetCustomerNamesAsync(UserContext.CurrentUserId, Token);
+                return Customers;
+
+            }
+            catch (Exception ex )
+            {
+                Console.WriteLine($"An Error happend while fetching customers: {ex}");
+                return new List<CompanyNames>();
+            }
         }
 
         public Task<bool> UpdateCompanyAsync(CompanyDto Company, CancellationToken Token)

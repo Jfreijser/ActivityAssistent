@@ -1,10 +1,14 @@
-﻿using ActivityAssistent.Api.Interfaces.Identity;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Net;
+using System.Security.Claims;
+using ActivityAssistent.Api.Interfaces.Identity;
+using ActivityAssistent.Api.Services;
 using ActivityAssistent.Shared.Dtos.Identity;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.PowerPlatform.Dataverse.Client;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using Newtonsoft.Json.Linq;
 
 namespace ActivityAssistent.Api.Controllers
 {
@@ -32,18 +36,22 @@ namespace ActivityAssistent.Api.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<ActionResult<AuthResultDto>> LoginAsync([FromBody]LoginCredentialsDto credentials, CancellationToken token = default)
+        public async Task<ActionResult<AuthResultDto>> LoginAsync([FromBody] LoginCredentialsDto credentials, CancellationToken token = default)
         {
             try
-            { 
+            {
+                // 1. Controleer de gegevens en genereer de token via je AuthService
                 var Result = await authService.LoginAsync(credentials, token);
+
                 if (!Result.IsSuccess)
                 {
                     return Unauthorized(Result);
                 }
+
+                // 2. Geen Cookies of SignInAsync meer! We sturen simpelweg de DTO met de JWT token terug.
                 return Ok(Result);
             }
-            catch(Exception Ex) 
+            catch (Exception Ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, new AuthResultDto
                 {
@@ -51,6 +59,13 @@ namespace ActivityAssistent.Api.Controllers
                     ErrorMessage = "Er is een onverwachte fout opgetreden. Probeer het later opnieuw."
                 });
             }
+        }
+
+        [HttpPost("logout")]
+        public async Task<IActionResult> LogoutAsync()
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return Ok();
         }
     }
 }

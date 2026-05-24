@@ -1,6 +1,7 @@
 ﻿@page "/SalesConversation/"
 @using MudBlazor
 @using ActivityAssistent.Shared.Dtos.Identity
+@inject NavigationManager NavigationManager
 
 @* Vang het gecascadeerde profiel op vanuit MainLayout *@
 
@@ -16,13 +17,12 @@
             </MudText>
         </MudItem>
         <MudItem>
-            <MudButton Variant="Variant.Filled" 
-                       Color="Color.Primary" 
-                       StartIcon="@Icons.Material.Filled.AddIcCall" 
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.AddIcCall"
                        Size="Size.Large"
-                       Href="@("/SalesConversation/Create")">
-
-                Create a new  conversation
+                       OnClick="NavigateToCreatePage">
+                Create a new conversation
             </MudButton>
         </MudItem>
     </MudGrid>
@@ -152,7 +152,10 @@
         IsLoadingConversations = false;
     }
 
-   
+    private void NavigateToCreatePage()
+    {
+        NavigationManager.NavigateTo("/SalesConversation/Create");
+    }
 
     private void ResetFilters()
     {
