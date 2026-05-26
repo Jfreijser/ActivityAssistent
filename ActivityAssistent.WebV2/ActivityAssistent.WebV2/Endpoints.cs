@@ -24,6 +24,24 @@ public static class AuthEndpoints
 
             var Jwt = new JwtSecurityTokenHandler().ReadJwtToken(Result.AccessToken);
             var Identity = new ClaimsIdentity(Jwt.Claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var FullNameClaim = Jwt.Claims.FirstOrDefault(c => c.Type == "unique_name")?.Value;
+            if (FullNameClaim != null)
+            {
+                Identity.AddClaim(new Claim("name", FullNameClaim));
+            }
+            var SubNrClaimValue = Jwt.Claims.FirstOrDefault(c => c.Type == "groupsid" || c.Type == "groups")?.Value;
+            if (!string.IsNullOrEmpty(SubNrClaimValue))
+            {
+                // We gebruiken GroupSid als het gestandaardiseerde .NET alternatief voor een bedrijfs/groeps-ID
+                Identity.AddClaim(new Claim(ClaimTypes.GroupSid, SubNrClaimValue));
+            }
+
+            // 2. Rol claim overzetten (Azure AD gebruikt vaak "roles" of "role" in het JWT)
+            var RoleClaimValue = Jwt.Claims.FirstOrDefault(c => c.Type == "roles" || c.Type == "role")?.Value;
+            if (!string.IsNullOrEmpty(RoleClaimValue))
+            {
+                Identity.AddClaim(new Claim(ClaimTypes.Role, RoleClaimValue));
+            }
             Identity.AddClaim(new Claim("ApiToken", Result.AccessToken));
             var Principal = new ClaimsPrincipal(Identity);
 

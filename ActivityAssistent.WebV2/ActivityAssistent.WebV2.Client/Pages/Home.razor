@@ -5,6 +5,7 @@
 @attribute [Authorize]
 @inject AuthenticationStateProvider AuthStateProvider
 @using ActivityAssistent.Shared.Dtos
+@using ActivityAssistent.Shared.Dtos.Identity
 @using MudBlazor
 
 <PageTitle>Dashboard - ActivityAssistent</PageTitle>
@@ -18,7 +19,7 @@
                 <MudCardHeader>
                     <CardHeaderContent>
                         <MudText Typo="Typo.h5">Welcome back!</MudText>
-                        <MudText Typo="Typo.subtitle1" Color="Color.Primary">@UserName</MudText>
+                        <MudText Typo="Typo.subtitle1" Color="Color.Primary">@UserProfile.FullName</MudText>
                     </CardHeaderContent>
                     <CardHeaderActions>
                         <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Default" />
@@ -34,33 +35,8 @@
 </MudContainer>
 
 @code {
-    private string UserName = string.Empty;
+    [CascadingParameter]
+    public UserProfileDto UserProfile { get; set; } = new();
 
-    protected override async Task OnInitializedAsync()
-    {
-        AuthStateProvider.AuthenticationStateChanged += HandleAuthenticationStateChanged;
-        await LoadUserState();
-    }
 
-    private async Task LoadUserState()
-    {
-        var state = await AuthStateProvider.GetAuthenticationStateAsync();
-        var user = state.User;
-
-        if (user.Identity is { IsAuthenticated: true })
-        {
-            UserName = user.Identity.Name ?? "Sales Professional";
-            StateHasChanged();
-        }
-    }
-
-    private void HandleAuthenticationStateChanged(Task<AuthenticationState> task)
-    {
-        InvokeAsync(LoadUserState);
-    }
-
-    public void Dispose()
-    {
-        AuthStateProvider.AuthenticationStateChanged -= HandleAuthenticationStateChanged;
-    }
 }

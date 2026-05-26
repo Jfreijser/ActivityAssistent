@@ -53,7 +53,8 @@ namespace ActivityAssistent.WebV2.Client.Services.AuthService
                 UserId = null,
                 FullName = "Gastgebruiker",
                 Email = string.Empty,
-                JobTitle = string.Empty
+                Role = string.Empty,
+                SubNrId = null
             };
         }
     }

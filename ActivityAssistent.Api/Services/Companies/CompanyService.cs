@@ -9,10 +9,10 @@ namespace ActivityAssistent.Api.Services.Companies
 {
     public class CompanyService (ICompanyRepository CompanyRepository, IUserContext UserContext) : ICompanyService
     {
-        public async Task<CompanyDto> CreateCompanyAsync(CreateCompanyDto CompanyDto, CancellationToken Token)
+        public async Task<bool> CreateCompanyAsync(CreateCompanyDto CompanyDto, CancellationToken Token)
         {
-            var Exist =  await CompanyRepository.GetByNameAsync(CompanyDto.Name, Token);
-            if (Exist is not null)
+            var Exist =  await CompanyRepository.GetByNameAsync(CompanyDto.Name, UserContext.CurrentUserId, Token);
+            if (Exist.Any())
             {
                 throw new Exception("Company with the same name already exists.");
             }
@@ -21,7 +21,7 @@ namespace ActivityAssistent.Api.Services.Companies
             
             var Id = await CompanyRepository.CreateAsync(CompanyDto, Token);
 
-            return await CompanyRepository.GetByIdAsync(Id, Token);
+            return Id != Guid.Empty;
         }
 
         public Task<bool> DeleteCompanyAsync(Guid CompanyId, CancellationToken Token)

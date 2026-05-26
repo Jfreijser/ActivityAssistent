@@ -23,7 +23,8 @@ namespace ActivityAssistent.Api.Services
                     UserId = null,
                     FullName = "Gastgebruiker",
                     Email = string.Empty,
-                    JobTitle = string.Empty
+                    Role = UserContext.Role,
+                    SubNrId = UserContext.SubNrId
                 };
             }
 
@@ -79,9 +80,8 @@ namespace ActivityAssistent.Api.Services
                 new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()), // Voor de User.FindFirst(ClaimTypes.NameIdentifier)
                 new Claim(ClaimTypes.Name, user.FullName),                    // Dit vult direct User.Identity.Name in je Blazor menu!
                 new Claim(ClaimTypes.Email, user.Email),
-                
-                // Jti mag wel gewoon JwtRegisteredClaimNames blijven, dat is standaard voor het token ID
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                new Claim(ClaimTypes.Role, user.RoleName),
+                new Claim(ClaimTypes.GroupSid, user.SubNrId?.ToString() ?? string.Empty)
             };
 
             var TokenDescriptor = new SecurityTokenDescriptor

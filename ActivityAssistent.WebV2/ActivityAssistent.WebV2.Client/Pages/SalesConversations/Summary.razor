@@ -1,0 +1,24 @@
+@page "/SalesConversation/Summary/{ConversationId:guid}"
+@using MudBlazor
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-6">
+	<MudText Typo="Typo.h4" Color="Color.Primary">Samenvatting</MudText>
+	<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+		Overzicht van de AI-samenvatting van het gesprek.
+	</MudText>
+
+	<MudPaper Elevation="2" Class="pa-4">
+		<MudText Typo="Typo.subtitle1">Samenvatting</MudText>
+		<MudText Typo="Typo.body2" Color="Color.Secondary">
+			Hier komt de gegenereerde samenvatting te staan.
+		</MudText>
+		<MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="mt-4">
+			Verstuur samenvatting naar klant
+		</MudButton>
+	</MudPaper>
+</MudContainer>
+
+@code {
+	[Parameter]
+	public Guid ConversationId { get; set; }
+}

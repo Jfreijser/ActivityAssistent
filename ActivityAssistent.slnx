@@ -1,6 +1,5 @@
 <Solution>
   <Project Path="ActivityAssistent.Api/ActivityAssistent.Api.csproj" />
-  <Project Path="ActivityAssistent.App/ActivityAssistent.App.csproj" Id="a69f8349-9ac3-4919-9102-a9109db3c6d0" />
   <Project Path="ActivityAssistent.Shared/ActivityAssistent.Shared.csproj" />
   <Project Path="ActivityAssistent.WebV2/ActivityAssistent.WebV2.Client/ActivityAssistent.WebV2.Client.csproj" Id="ad690386-375a-4bea-b8b0-f5b5557ed18b" />
   <Project Path="ActivityAssistent.WebV2/ActivityAssistent.WebV2/ActivityAssistent.WebV2.csproj" Id="abe0b220-7a54-48d9-bce1-72bcb792a649" />

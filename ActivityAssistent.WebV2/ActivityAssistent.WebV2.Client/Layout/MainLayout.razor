@@ -2,85 +2,110 @@
 @using MudBlazor
 @using ActivityAssistent.WebV2.Client.Services
 @using ActivityAssistent.Shared.Dtos.Identity
-@inject IThemeService ThemeService
 @using ActivityAssistent.WebV2.Client.Interfaces.Identity
-
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@inject IThemeService ThemeService
+@inject AuthenticationStateProvider AuthStateProvider
 @inject IAuthService AuthService
 @inject IDialogService DialogService
-@using ActivityAssistent.WebV2.Client.Pages
+@inject IJSRuntime JsRuntime
+@implements IDisposable
 
 <MudThemeProvider Theme="@ActivityAssistantTheme" IsDarkMode="@IsDarkMode" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 <MudPopoverProvider />
 
+<CascadingValue Value="CurrentUser">
+    <CascadingValue Value="IsDarkMode">
+        <MudLayout>
+            <MudAppBar Elevation="1" Color="Color.Surface">
+                <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" Class="mr-2" />
+                <MudText Typo="Typo.h6" Color="Color.Primary">
+                    <MudLink Href="/" Underline="Underline.None" Color="Color.Inherit">
+                        Activity Assistant
+                    </MudLink>
+                </MudText>
+                <MudSpacer />
 
-<MudLayout>
-    <MudAppBar Elevation="1" Color="Color.Surface">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" Class="mr-2" />
-        <MudText Typo="Typo.h6" Color="Color.Primary">Activity Assistant</MudText>
-        <MudSpacer />
+                <AuthorizeView>
+                    <Authorized>
+                        @* HET DROPDOWN MENU *@
+                        <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="mx-2">
+                            <ActivatorContent Context="MenuActivatorContext">
+                                <MudButton Variant="Variant.Text" Color="Color.Inherit" Class="pa-0">
+                                    <MudBadge Overlap="true" Color="Color.Success" Dot="true" Bordered="true">
+                                        <MudAvatar Color="Color.Primary" Variant="Variant.Filled" Size="Size.Medium">
+                                            @GetUserInitial(CurrentUser.FullName)
+                                        </MudAvatar>
+                                    </MudBadge>
+                                </MudButton>
+                            </ActivatorContent>
+                            <ChildContent >
+                                @* Header van het menu *@
+                                <div class="px-4 py-3">
+                                    <MudText Typo="Typo.body2" Class="mud-text-secondary">Ingelogd als:</MudText>
+                                    <MudText Typo="Typo.body1"><b>@CurrentUser.FullName</b></MudText>
+                                </div>
+                                <MudDivider />
 
-        @* Blazor kijkt nu zelf of er een geldige token is *@
-        <AuthorizeView Context="AuthContext">
-            <Authorized>
-                <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="mx-2">
-                    <ActivatorContent>
-                        <MudAvatar Color="Color.Primary" Variant="Variant.Filled" Size="Size.Medium">
-                            @* Aangepast naar AuthContext en we geven de naam mee *@
-                            @GetUserInitial(AuthContext.User.Identity?.Name)
-                        </MudAvatar>
-                    </ActivatorContent>
-                    <ChildContent>
-                        <div class="px-4 py-2">
-                            @* Aangepast naar AuthContext *@
-                            <MudText Typo="Typo.body2"><b>@AuthContext.User.Identity?.Name</b></MudText>
-                        </div>
-                        <MudDivider />
-                        <MudMenuItem Icon="@Icons.Material.Filled.Settings">Account Settings</MudMenuItem>
-                        <MudMenuItem Icon="@Icons.Material.Filled.Settings">Account Settings</MudMenuItem>
+                                @* SNELLINKS *@
+                                <MudMenuItem Icon="@Icons.Material.Filled.Person" Href="/profile">Mijn Profiel</MudMenuItem>
+                                <MudMenuItem Icon="@Icons.Material.Filled.Dashboard" Href="/">Dashboard</MudMenuItem>
+                                <MudMenuItem Icon="@Icons.Material.Filled.History" Href="/SalesConversation">Gesprekken</MudMenuItem>
+                                <MudMenuItem Icon="@Icons.Material.Filled.Settings" Href="/settings">Instellingen</MudMenuItem>
 
-                        <form action="/auth/logout" method="post">
-                            <AntiforgeryToken />
-                            <button type="submit" style="all: unset; width: 100%; cursor: pointer;">
-                                <MudMenuItem Icon="@Icons.Material.Filled.Logout" IconColor="Color.Error">
-                                    Logout
+                                <MudDivider />
+
+                                @* UITLOGGEN *@
+                                <form id="LogoutForm" action="/auth/logout" method="post" style="display: none;">
+                                    <AntiforgeryToken />
+                                </form>
+
+                                <MudMenuItem Icon="@Icons.Material.Filled.Logout"
+                                             IconColor="Color.Error"
+                                             OnClick="HandleLogout">
+                                    <MudText Color="Color.Error">Uitloggen</MudText>
                                 </MudMenuItem>
-                            </button>
-                        </form>
-                    </ChildContent>
-                </MudMenu>
-            </Authorized>
-            <NotAuthorized>
-                <MudButton Variant="Variant.Text"
-                           Color="Color.Inherit"
-                           StartIcon="@Icons.Material.Filled.Login"
-                           Href="/login">
-                    Login
-                </MudButton>
-            </NotAuthorized>
-        </AuthorizeView>
+                            </ChildContent>
+                        </MudMenu>
+                    </Authorized>
+                    <NotAuthorized>
+                        <MudButton Variant="Variant.Text"
+                                   Color="Color.Inherit"
+                                   StartIcon="@Icons.Material.Filled.Login"
+                                   Href="/login">
+                            Login
+                        </MudButton>
+                    </NotAuthorized>
+                </AuthorizeView>
 
-        <MudIconButton Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" OnClick="ToggleDarkMode" Color="Color.Inherit" />
-    </MudAppBar>
+                <MudIconButton Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" OnClick="ToggleDarkMode" Color="Color.Inherit" />
+            </MudAppBar>
 
-    <MudDrawer @bind-Open="IsDrawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
-        <MudNavMenu>
-            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
-            <MudNavLink Href="/SalesConversation/" Icon="@Icons.Material.Filled.Handshake">Sales conversations</MudNavLink>
-        </MudNavMenu>
-    </MudDrawer>
+            @* De zij-navigatie *@
+            <MudDrawer @bind-Open="IsDrawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
+                <MudNavMenu>
+                    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
+                    <MudNavLink Href="/SalesConversation/" Icon="@Icons.Material.Filled.Handshake">Sales conversations</MudNavLink>
+                </MudNavMenu>
+            </MudDrawer>
 
-    <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.Large" Class="my-4 pt-4">
-            @Body
-        </MudContainer>
-    </MudMainContent>
-</MudLayout>
+            <MudMainContent>
+                <MudContainer MaxWidth="MaxWidth.Large" Class="my-4 pt-4">
+                    @Body
+                </MudContainer>
+            </MudMainContent>
+        </MudLayout>
+    </CascadingValue>
+</CascadingValue>
 
 @code {
     private bool IsDarkMode = true;
     private bool IsDrawerOpen = true;
+    private string UserName = "Sales Professional";
+    private UserProfileDto CurrentUser { get; set; } = new();
 
     private MudTheme ActivityAssistantTheme = new MudTheme()
     {
@@ -110,8 +135,13 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Alleen Theme laden. Auth wordt nu door Blazor geregeld!
         IsDarkMode = await ThemeService.IsDarkModeAsync();
+        
+        // Laad de actuele gebruikersstatus bij de eerste start
+        await LoadUserState();
+
+        // Abonneer op veranderingen van de inlogstatus
+        AuthStateProvider.AuthenticationStateChanged += HandleAuthenticationStateChanged;
     }
 
     public async Task ToggleDarkMode()
@@ -126,8 +156,6 @@
         IsDrawerOpen = !IsDrawerOpen;
     }
 
-   
-    // Nu accepteert de functie netjes de FullName string
     private string GetUserInitial(string? FullName)
     {
         if (!string.IsNullOrWhiteSpace(FullName))
@@ -135,5 +163,72 @@
             return FullName.Substring(0, 1).ToUpper();
         }
         return "U";
+    }
+
+    private async Task LoadUserState()
+    {
+        var State = await AuthStateProvider.GetAuthenticationStateAsync();
+        var User = State.User;
+
+        if (User.Identity is { IsAuthenticated: true })
+        {
+            // Controleert eerst jouw specifieke token claims, valt daarna pas terug op de default .NET Name
+            var RawUserId = User.FindFirst("nameid")?.Value;
+
+            // Probeer de string om te zetten naar een echte Guid.
+            // Als het parsen mislukt, valt hij terug op Guid.Empty
+            Guid.TryParse(RawUserId, out var ParsedGuid);
+
+            var RawSubNrId = User.FindFirst(System.Security.Claims.ClaimTypes.GroupSid)?.Value;
+            Guid? ParsedSubNrId = Guid.TryParse(RawSubNrId, out var ValidSubNrGuid) ? ValidSubNrGuid : null;
+
+            // Haal de rol op uit de standaard .NET Role claim
+            var UserRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? string.Empty;
+            CurrentUser = new UserProfileDto
+            {
+                UserId = ParsedGuid,
+
+                FullName = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
+                            ?? User.FindFirst("unique_name")?.Value
+                            ?? User.Identity.Name
+                            ?? "Sales Professional",
+
+                Email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+                         ?? string.Empty,
+
+                SubNrId = ParsedSubNrId,
+                Role = UserRole
+
+                // Mocht je nog andere eigenschappen hebben in je DTO (zoals een Id of Role),
+                // dan kun je die hier ook direct uit de claims vissen:
+                // Id = User.FindFirst("nameid")?.Value
+            };
+        }
+        else
+        {
+            CurrentUser = new UserProfileDto
+            {
+                UserId = Guid.Empty,
+                FullName = "Sales Professional"
+            };
+        }
+        
+        StateHasChanged();
+    }
+
+    private void HandleAuthenticationStateChanged(Task<AuthenticationState> Task) 
+    {
+        InvokeAsync(LoadUserState);
+    }
+
+    private async Task HandleLogout()
+    {
+        await JsRuntime.InvokeVoidAsync("eval", "document.getElementById('LogoutForm').submit();");
+    }
+
+    public void Dispose()
+    {
+        // Netjes de event handler loskoppelen bij het afsluiten
+        AuthStateProvider.AuthenticationStateChanged -= HandleAuthenticationStateChanged;
     }
 }

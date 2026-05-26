@@ -20,5 +20,26 @@ namespace ActivityAssistent.Api.Infrastructure
                 return Guid.TryParse(IdClaim, out var ValidGuid) ? ValidGuid : Guid.Empty;
             }
         }
+
+        public string Role
+        {
+            get
+            {
+                var User = Accessor.HttpContext?.User;
+                return User?.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
+            }
+        }
+        
+
+        public Guid? SubNrId
+        {
+            get 
+            {
+                var User = Accessor.HttpContext?.User;
+                var SubNrClaim = User?.FindFirst(ClaimTypes.GroupSid)?.Value;
+
+                return Guid.TryParse(SubNrClaim, out var ValidGuid) ? ValidGuid : null;
+            }
+        }
     }
 }

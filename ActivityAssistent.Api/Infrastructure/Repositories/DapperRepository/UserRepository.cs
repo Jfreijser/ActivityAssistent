@@ -19,7 +19,9 @@ namespace ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository
 
         public async Task<UserAuthDto?> GetUserForLoginByEmailAsync(string Email, CancellationToken Token = default)
         {
-            string sql = "select * from Users where Email = @Email";
+            string sql = @"select us.*, Rol.Name as RoleName from Users as us
+                           left join Roles as Rol on Rol.RoleId = us.RoleId
+                           where Email =@Email";
             using (var conn = connection.CreateConnection())
             {
                 return await conn.QueryFirstOrDefaultAsync<UserAuthDto?>(sql, new { Email });

@@ -5,6 +5,8 @@
 @using ActivityAssistent.Shared.Dtos.Conversations
 @using ActivityAssistent.WebV2.Client.Pages.Companies
 @using ActivityAssistent.WebV2.Client.Interfaces.companies
+@using ActivityAssistent.WebV2.Client.Interfaces.Conversations
+@inject IConversationService ConversationService
 @inject NavigationManager NavManager
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
@@ -109,9 +111,17 @@
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Primary"
                                OnClick="HandleSave"
-                               Disabled="@(!IsFormValid)"
+                               Disabled="@(!IsFormValid || IsSaving)"
                                Size="Size.Large">
-                        Opslaan & Klaarzetten
+                        @if (IsSaving)
+                        {
+                            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                            <MudText Class="ms-2">Opslaan...</MudText>
+                        }
+                        else
+                        {
+                            <MudText>Opslaan & Klaarzetten</MudText>
+                        }
                     </MudButton>
                 </MudItem>
 
@@ -121,8 +131,9 @@
 </MudContainer>
 
 @code {
-    [CascadingParameter] public UserProfileDto? UserProfile { get; set; }
-
+    [CascadingParameter]
+    public UserProfileDto UserProfile { get; set; } = new();
+    private bool IsSaving;
     private MudForm Form;
     private bool IsFormValid;
 
@@ -138,6 +149,7 @@
     {
         try
         {
+
             await GetCompanies();
 
             // Koppel automatisch de medewerker ID aan de nieuwe opname, veilig genest
@@ -162,19 +174,46 @@
     {
         if (IsFormValid)
         {
-            // Combineer datum en tijd
-            if (SelectedDate.HasValue && SelectedTime.HasValue)
+            try
             {
-                Conversation.MeetingDate = SelectedDate.Value.Add(SelectedTime.Value);
-            }
+                IsSaving = true; 
 
-            // TODO: API Call naar je tussenlaag om op te slaan in Dataverse
-            // var Result = await SalesService.CreateAsync(Conversation);
+                if (SelectedDate.HasValue && SelectedTime.HasValue)
+                {
+                    Conversation.MeetingDate = SelectedDate.Value.Add(SelectedTime.Value);
+                }
 
-            Snackbar.Add("Gesprek succesvol klaargezet!", Severity.Success);
+                var Result = await ConversationService.CreateConversationAsync(Conversation, TokenSource.Token);
 
-            // Ga terug naar het overzicht
-            NavManager.NavigateTo("/SalesConversation/SalesConversationIndex");
+                if (Result.ConversationId != Guid.Empty)
+                {
+
+                    Snackbar.Add("Gesprek succesvol klaargezet!", Severity.Success);
+
+            
+                    NavManager.NavigateTo($"/SalesConversation/Detail/{Result.ConversationId}");
+
+                    
+                }
+        }
+        catch (TaskCanceledException)
+        {
+           
+            Console.WriteLine("Het opslaan is geannuleerd (bijv. door een time-out of navigatie).");
+            Snackbar.Add("Het opslaan duurde te lang of is afgebroken.", Severity.Warning);
+        }
+        catch (Exception Ex)
+        {
+            // Vangt alle andere fouten op (zoals een onbereikbare database)
+            Console.WriteLine($"Fout tijdens opslaan: {Ex.Message}");
+            Snackbar.Add("Er ging iets mis bij het aanmaken van het gesprek.", Severity.Error);
+        }
+        finally
+        {
+           
+            IsSaving = false;
+        }
+            
         }
     }
 
@@ -193,18 +232,16 @@
         var Result = await Dialog.Result;
 
         // Controleer of de gebruiker niet op annuleren heeft gedrukt
-        if (!Result.Canceled && Result.Data is Guid NewCustomerId)
+        if (!Result.Canceled && Result.Data is true)
         {
             // 1. Ververs hier je lokale lijst met klanten door je REST API opnieuw aan te roepen.
             await GetCompanies();
 
-            // 2. Selecteer direct de zojuist aangemaakte klant in de dropdown
-            Conversation.CompanyId = NewCustomerId;
 
             // Geef de UI een seintje dat de geselecteerde waarde is aangepast
             StateHasChanged();
 
-            Snackbar.Add("Nieuwe klant aangemaakt en geselecteerd!", Severity.Success);
+            Snackbar.Add("New customer has been added!", Severity.Success);
         }
     }
 

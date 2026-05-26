@@ -1,21 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Text;
 using ActivityAssistent.Shared.Enums;
 
 namespace ActivityAssistent.Shared.Dtos.Conversations
 {
-    public class ConversationDto
+    public class UpdateConversationDto
     {
+        [Required]
+
         public Guid ConversationId { get; set; }
+
+
+        [Required(ErrorMessage = "Title is required.")]
+
         public string Title { get; set; }
-        public Guid CompanyId { get; set; }
-        public string  CompanyName { get; set; }
+
+        [Required(ErrorMessage = "Meeting date is required.")]
+
         public DateTime MeetingDate { get; set; }
+
+        [Required(ErrorMessage = "Description is required."),MinLength(3) ,MaxLength(500)]
         public string Description { get; set; }
 
-        // Alvast een status om aan te geven of de AI de samenvatting al klaar heeft
+        [Required(ErrorMessage = "Status is required.")]
         public ConversationStatus Status { get; set; }
-        
     }
 }

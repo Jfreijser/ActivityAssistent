@@ -1,0 +1,24 @@
+@page "/SalesConversation/{ConversationId:guid}/ActionPoints"
+@using MudBlazor
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-6">
+	<MudText Typo="Typo.h4" Color="Color.Primary">Actiepunten</MudText>
+	<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+		Beheer de actiepunten van dit gesprek.
+	</MudText>
+
+	<MudPaper Elevation="2" Class="pa-4">
+		<MudText Typo="Typo.subtitle1">Takenlijst</MudText>
+		<MudText Typo="Typo.body2" Color="Color.Secondary">
+			Hier komt het overzicht van taken en statussen.
+		</MudText>
+		<MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4">
+			Taak toevoegen
+		</MudButton>
+	</MudPaper>
+</MudContainer>
+
+@code {
+	[Parameter]
+	public Guid ConversationId { get; set; }
+}

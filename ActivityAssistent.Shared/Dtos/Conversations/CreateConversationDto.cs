@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
+using ActivityAssistent.Shared.Enums;
 
 namespace ActivityAssistent.Shared.Dtos.Conversations
 {
@@ -16,6 +17,8 @@ namespace ActivityAssistent.Shared.Dtos.Conversations
         [Required(ErrorMessage = "Sales User ID is required.")]
         public Guid SalesUserId { get; set; }
 
+
         public DateTime MeetingDate { get; set; } = DateTime.Now;
+        public ConversationStatus Status { get; set; }
     }
 }

@@ -40,7 +40,7 @@ Action<HttpClient> ConfigureBackendClient = Client =>
 };
 
 Builder.Services.AddHttpClient<IAuthService, WebAuthService>(ConfigureBackendClient);
-Builder.Services.AddHttpClient<IConversationService, ConversationService>(ConfigureBackendClient);
+Builder.Services.AddHttpClient<IConversationService, WebConversationService>(ConfigureBackendClient);
 Builder.Services.AddHttpClient<ICompanyService, WebCompanyService>(ConfigureBackendClient);
 Builder.Services.AddHttpClient("ApiClient", ConfigureBackendClient);
 

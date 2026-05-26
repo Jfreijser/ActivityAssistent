@@ -98,15 +98,15 @@
         try
         {
 			Model.CreatedOn = DateTime.Now;
-            var CompanyDto = await CustomerService.CreateCompanyAsync(Model, TokenSource.Token);
+            var result = await CustomerService.CreateCompanyAsync(Model, TokenSource.Token);
             
-            if (CompanyDto == null || CompanyDto.CompanyId == Guid.Empty)
+            if (!result)
             {
                 Snackbar.Add("Fout: Ontvangen ongeldige reactie van de server.", Severity.Error);
                 return;
             }
 
-            MudDialog.Close(DialogResult.Ok(CompanyDto.CompanyId));
+            MudDialog.Close(DialogResult.Ok(result));
         }
         catch (Exception Ex)
         {

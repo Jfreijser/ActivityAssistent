@@ -8,12 +8,12 @@ namespace ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository
     {
         public async Task<Guid> CreateAsync(CreateCompanyDto Company, CancellationToken Token)
         {
-            string Sql = @"Insert Into Companies(Name, KvkNumber, Email, PhoneNumber, CreatedOn, City, Address, OwnerUserId) 
+            string Sql = @"Insert Into Companies(Name, Email, PhoneNumber, CreatedOn, City, Address, OwnerUserId) 
                             OUTPUT INSERTED.CompanyId
-                            Values(@Name, @KvkNumber, @Email, @PhoneNumber, @CreatedOn, @City, @Address, @OwnerUserId)";
+                            Values(@Name, @Email, @PhoneNumber, @CreatedOn, @City, @Address, @OwnerUserId)";
 
             using (var conn = connection.CreateConnection())
-            { 
+            {
                 return await conn.QuerySingleAsync<Guid>(Sql, Company);
                 
             }
@@ -39,9 +39,14 @@ namespace ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository
             }
         }
 
-        public Task<string> GetByNameAsync(string Name, CancellationToken Token)
+        public async Task<List<string>> GetByNameAsync(string Name, Guid OwnerUserId, CancellationToken Token)
         {
-            throw new NotImplementedException();
+            string Sql = "select Name from Companies where Name = @Name and OwnerUserId = @OwnerUserId";
+
+            using (var conn = connection.CreateConnection())
+            {
+                return (await conn.QueryAsync<string>(Sql, new { Name, OwnerUserId })).ToList();
+            }
         }
 
         public async Task<List<CompanyNames>> GetCustomerNamesAsync(Guid OwnerUserId, CancellationToken Token)

@@ -12,7 +12,7 @@ namespace ActivityAssistent.Api.Interfaces.companies
         Task<Guid> CreateAsync(CreateCompanyDto Company, CancellationToken Token);
         Task <bool>UpdateAsync(UpdateCompanyDto Company, CancellationToken Token);
         Task <bool>DeleteAsync(Guid CompanyId, CancellationToken Token);
-        Task<string> GetByNameAsync(string Name, CancellationToken Token);
+        Task<List<string>> GetByNameAsync(string Name, Guid OwnerUserId, CancellationToken Token);
         Task<List<CompanyNames>> GetCustomerNamesAsync(Guid OwnerUserId, CancellationToken Token);
     }
 }

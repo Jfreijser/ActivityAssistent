@@ -6,10 +6,10 @@ namespace ActivityAssistent.Shared.Enums
 {
     public enum ConversationStatus
     {
-        Pending,
-        Recording,
-        Processing,
-        Completed,
-        Failed
+        Scheduled = 0,
+        Recording = 1,
+        Processing = 2,
+        Completed = 3,
+        Failed = 4
     }
 }
