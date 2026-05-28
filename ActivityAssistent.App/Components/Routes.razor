@@ -1,6 +1,18 @@
-﻿<Router AppAssembly="typeof(MauiProgram).Assembly" NotFoundPage="typeof(Pages.NotFound)">
-    <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
-        <FocusOnNavigate RouteData="routeData" Selector="h1" />
-    </Found>
-</Router>
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Routing
+@using ActivityAssistent.App.Components.Layout
+
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(MauiProgram).Assembly">
+        <Found Context="RouteData">
+            <AuthorizeRouteView RouteData="@RouteData" DefaultLayout="@typeof(MainLayout)" />
+            <FocusOnNavigate RouteData="@RouteData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <PageTitle>Niet gevonden</PageTitle>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <p role="alert">Sorry, we konden deze pagina niet vinden.</p>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>

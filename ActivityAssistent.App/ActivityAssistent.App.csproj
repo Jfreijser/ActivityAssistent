@@ -72,6 +72,7 @@
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
         <PackageReference Include="MudBlazor" Version="9.5.0" />
+        <PackageReference Include="MudBlazor.ThemeManager" Version="4.0.0" />
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.18.0" />
     </ItemGroup>
 

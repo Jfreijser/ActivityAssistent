@@ -1,7 +1,8 @@
 ﻿using ActivityAssistent.App.Auth;
+using ActivityAssistent.App.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Logging;
-
+using MudBlazor.Services;
 namespace ActivityAssistent.App
 {
     public static class MauiProgram
@@ -22,6 +23,7 @@ namespace ActivityAssistent.App
                 ServiceProvider.GetRequiredService<CustomAuthenticationStateProvider>());
 
             builder.Services.AddAuthorizationCore();
+            builder.Services.AddMudServices();
             Action<HttpClient> ConfigureBackendClient = Client =>
             {
                 // Vergeet niet dat localhost voor een Android emulator straks 10.0.2.2 wordt
@@ -33,7 +35,7 @@ namespace ActivityAssistent.App
     		builder.Logging.AddDebug();
 #endif
             //builder.Services.AddHttpClient<IConversationService, MauiConversationService>(ConfigureBackendClient);
-            
+            builder.Services.AddScoped<IThemeService, ThemeService>();
             return builder.Build();
         }
     }

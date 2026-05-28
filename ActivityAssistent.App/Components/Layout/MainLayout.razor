@@ -1,17 +1,210 @@
 ﻿@inherits LayoutComponentBase
+@* Zorg dat we bij je specifieke MAUI log-out methode kunnen *@
+@using ActivityAssistent.App.Auth 
+@inject CustomAuthenticationStateProvider AuthStateProvider
+@inject IThemeService ThemeService
+@inject NavigationManager NavigationManager
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+@implements IDisposable
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+<MudThemeProvider Theme="@ActivityAssistantTheme" IsDarkMode="@IsDarkMode" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MudPopoverProvider />
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+<CascadingValue Value="CurrentUser">
+    <CascadingValue Value="IsDarkMode">
+        <MudLayout>
+            <MudAppBar Elevation="1" Color="Color.Surface">
+                <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" Class="mr-2" />
+                <MudText Typo="Typo.h6" Color="Color.Primary">
+                    <MudLink Href="/" Underline="Underline.None" Color="Color.Inherit">
+                        Activity Assistant
+                    </MudLink>
+                </MudText>
+                <MudSpacer />
+
+                <AuthorizeView>
+                    <Authorized>
+                        <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="mx-2">
+                            <ActivatorContent Context="MenuActivatorContext">
+                                <MudButton Variant="Variant.Text" Color="Color.Inherit" Class="pa-0">
+                                    <MudBadge Overlap="true" Color="Color.Success" Dot="true" Bordered="true">
+                                        <MudAvatar Color="Color.Primary" Variant="Variant.Filled" Size="Size.Medium">
+                                            @GetUserInitial(CurrentUser.FullName)
+                                        </MudAvatar>
+                                    </MudBadge>
+                                </MudButton>
+                            </ActivatorContent>
+                            <ChildContent>
+                                <div class="px-4 py-3">
+                                    <MudText Typo="Typo.body2" Class="mud-text-secondary">Ingelogd als:</MudText>
+                                    <MudText Typo="Typo.body1"><b>@CurrentUser.FullName</b></MudText>
+                                </div>
+                                <MudDivider />
+
+                                <MudMenuItem Icon="@Icons.Material.Filled.Person" Href="/profile">Mijn Profiel</MudMenuItem>
+                                <MudMenuItem Icon="@Icons.Material.Filled.Dashboard" Href="/">Dashboard</MudMenuItem>
+                                <MudMenuItem Icon="@Icons.Material.Filled.History" Href="/SalesConversation">Gesprekken</MudMenuItem>
+                                <MudMenuItem Icon="@Icons.Material.Filled.Settings" Href="/settings">Instellingen</MudMenuItem>
+
+                                <MudDivider />
+
+                                @* MAUI Uitloggen (Geen Formulier meer nodig) *@
+                                <MudMenuItem Icon="@Icons.Material.Filled.Logout"
+                                             IconColor="Color.Error"
+                                             OnClick="HandleLogout">
+                                    <MudText Color="Color.Error">Uitloggen</MudText>
+                                </MudMenuItem>
+                            </ChildContent>
+                        </MudMenu>
+                    </Authorized>
+                    <NotAuthorized>
+                        <MudButton Variant="Variant.Text"
+                                   Color="Color.Inherit"
+                                   StartIcon="@Icons.Material.Filled.Login"
+                                   Href="/login">
+                            Login
+                        </MudButton>
+                    </NotAuthorized>
+                </AuthorizeView>
+
+               
+                <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Default" Edge="Edge.Start" OnClick="@ToggleDrawer" Class="mr-2" />
+
+                <MudIconButton Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" OnClick="ToggleDarkMode" Color="Color.Default" />
+            </MudAppBar>
+
+            <MudDrawer @bind-Open="IsDrawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
+                <MudNavMenu>
+                    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
+                    <MudNavLink Href="/SalesConversation/" Icon="@Icons.Material.Filled.Handshake">Sales conversations</MudNavLink>
+                </MudNavMenu>
+            </MudDrawer>
+
+            <MudMainContent>
+                <MudContainer MaxWidth="MaxWidth.Large" Class="my-4 pt-4">
+                    @Body
+                </MudContainer>
+            </MudMainContent>
+        </MudLayout>
+    </CascadingValue>
+</CascadingValue>
+
+@code {
+    private bool IsDarkMode = true;
+    private bool IsDrawerOpen = true;
+    private UserProfileDto CurrentUser { get; set; } = new();
+
+    private MudTheme ActivityAssistantTheme = new MudTheme()
+    {
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#1DB954",
+            PrimaryDarken = "#1ed760",
+            Secondary = "#1A3A52",
+            Tertiary = "#1A1A1E",
+            Background = "#0D1F2D",
+            Surface = "#1A3A52",
+            AppbarBackground = "#0D1F2D",
+            TextPrimary = "#E0E0E0",
+            TextSecondary = "#A9A9A9"
+        },
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#1DB954",
+            Secondary = "#1A3A52",
+            Background = "#F5F5F5",
+            Surface = "#FFFFFF",
+            AppbarBackground = "#FFFFFF",
+            TextPrimary = "#191414",
+            TextSecondary = "#545454"
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        IsDarkMode = await ThemeService.IsDarkModeAsync();
+        await LoadUserState();
+        AuthStateProvider.AuthenticationStateChanged += HandleAuthenticationStateChanged;
+    }
+
+    public async Task ToggleDarkMode()
+    {
+        IsDarkMode = !IsDarkMode;
+        await ThemeService.SetDarkModeAsync(IsDarkMode);
+        StateHasChanged();
+    }
+
+    private void ToggleDrawer()
+    {
+        IsDrawerOpen = !IsDrawerOpen;
+    }
+
+    private string GetUserInitial(string? FullName)
+    {
+        if (!string.IsNullOrWhiteSpace(FullName))
+        {
+            return FullName.Substring(0, 1).ToUpper();
+        }
+        return "U";
+    }
+
+    private async Task LoadUserState()
+    {
+        var State = await AuthStateProvider.GetAuthenticationStateAsync();
+        var User = State.User;
+
+        if (User.Identity is { IsAuthenticated: true })
+        {
+            var RawUserId = User.FindFirst("nameid")?.Value;
+            Guid.TryParse(RawUserId, out var ParsedGuid);
+
+            var RawSubNrId = User.FindFirst(System.Security.Claims.ClaimTypes.GroupSid)?.Value;
+            Guid? ParsedSubNrId = Guid.TryParse(RawSubNrId, out var ValidSubNrGuid) ? ValidSubNrGuid : null;
+
+            var UserRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? string.Empty;
+            
+            CurrentUser = new UserProfileDto
+            {
+                UserId = ParsedGuid,
+                FullName = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
+                            ?? User.FindFirst("unique_name")?.Value
+                            ?? User.Identity.Name
+                            ?? "Sales Professional",
+                Email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? string.Empty,
+                SubNrId = ParsedSubNrId,
+                Role = UserRole
+            };
+        }
+        else
+        {
+            CurrentUser = new UserProfileDto
+            {
+                UserId = Guid.Empty,
+                FullName = "Sales Professional"
+            };
+        }
+        
+        StateHasChanged();
+    }
+
+    private void HandleAuthenticationStateChanged(Task<AuthenticationState> Task) 
+    {
+        InvokeAsync(LoadUserState);
+    }
+
+    private void HandleLogout()
+    {
+        // Roep de C# methode aan die we hebben gemaakt om het token te verwijderen
+        AuthStateProvider.LogOut();
+        
+        // Stuur de gebruiker direct terug naar de login pagina
+        NavigationManager.NavigateTo("/login");
+    }
+
+    public void Dispose()
+    {
+        AuthStateProvider.AuthenticationStateChanged -= HandleAuthenticationStateChanged;
+    }
+}
