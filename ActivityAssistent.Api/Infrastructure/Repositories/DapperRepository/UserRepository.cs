@@ -27,5 +27,15 @@ namespace ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository
                 return await conn.QueryFirstOrDefaultAsync<UserAuthDto?>(sql, new { Email });
             }
         }
+
+        public async Task<List<UserProfileDto>> GetUsersBySubNrIdAsync(Guid SubNrId, CancellationToken Token = default)
+        {
+            string sql = "select UserId, FullName, Email, Role, SubNrId from Users where SubNrId = @SubNrId";
+            using (var conn = connection.CreateConnection())
+            {
+                var result = await conn.QueryAsync<UserProfileDto>(sql, new { SubNrId });
+                return result.ToList();
+            }
+        }
     }
 }

@@ -2,18 +2,18 @@
 using System.Collections.Generic;
 using System.Text;
 using ActivityAssistent.Shared.Dtos.ActionPoints;
+using ActivityAssistent.Shared.Dtos.Identity;
 
 namespace ActivityAssistent.WebV2.Client.Interfaces.ActionPoint
 {
     public interface IActionPointService
     {
-        // Ophalen van alle openstaande actiepunten voor een medewerker
-        Task<IEnumerable<ActionPointDto>> GetActiveActionPointsAsync(string UserId, CancellationToken Token);
-
-        // Een actiepunt bewerken (bijvoorbeeld afvinken als voltooid)
-        Task<ActionPointDto> UpdateActionPointAsync(ActionPointDto UpdatedActionPoint, CancellationToken Token);
-
-        // Een actiepunt verwijderen
-        Task DeleteActionPointAsync(Guid ActionPointId, CancellationToken Token);
+        Task<ActionPointDto> CreateActionPointAsync(CreateActionPointDto ActionPoint, CancellationToken Token);
+        Task<ActionPointDto> UpdateActionPointAsync(UpdateActionPointDto UpdatedActionPoint, CancellationToken Token);
+        Task<bool> DeleteActionPointAsync(Guid ActionPointId, CancellationToken Token);
+        Task<ActionPointDto> GetActionPointByIdAsync(Guid ActionPointId, CancellationToken Token);
+        Task<List<ActionPointDto>> GetActiveActionPointsAsync(string UserId, CancellationToken Token);
+        Task<List<ActionPointDto>> GetByConversationIdAsync(Guid ConversationId, CancellationToken Token);
+        Task<List<UserProfileDto>> GetDelegationUsersAsync(CancellationToken Token);
     }
 }

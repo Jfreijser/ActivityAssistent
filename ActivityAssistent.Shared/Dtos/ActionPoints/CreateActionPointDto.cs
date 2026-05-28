@@ -1,17 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.ComponentModel.DataAnnotations;
-using System.Text;
 
 namespace ActivityAssistent.Shared.Dtos.ActionPoints
 {
-    public class ActionPointDto
+    public class CreateActionPointDto
     {
-        [Required(ErrorMessage = "Action point ID is required.")]
-        public Guid ActionPointId { get; set; } // PK 
-
         [Required(ErrorMessage = "Conversation ID is required.")]
-        public Guid ConversationId { get; set; } // fk to Conversations.ConversationId
+        public Guid ConversationId { get; set; }
 
         [Required(ErrorMessage = "Description is required.")]
         [MinLength(3)]
@@ -19,7 +14,7 @@ namespace ActivityAssistent.Shared.Dtos.ActionPoints
         public string Description { get; set; }
 
         [Required(ErrorMessage = "Sales User ID is required.")]
-        public Guid SalesUserId { get; set; } // Fk to Users.UserId
+        public Guid SalesUserId { get; set; }
 
         [Required(ErrorMessage = "Due date is required.")]
         public DateTime DueDate { get; set; }
@@ -28,6 +23,6 @@ namespace ActivityAssistent.Shared.Dtos.ActionPoints
         public bool IsCompleted { get; set; }
 
         [Required(ErrorMessage = "SubNr ID is required.")]
-        public Guid SubNrId { get; set; } // Fk to SubNrs.SubNrId
+        public Guid SubNrId { get; set; }
     }
 }

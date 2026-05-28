@@ -4,10 +4,12 @@ using System.Security.Principal;
 using ActivityAssistent.Shared.Dtos.Identity;
 using ActivityAssistent.WebV2;
 using ActivityAssistent.WebV2.Client.Interfaces.companies;
+using ActivityAssistent.WebV2.Client.Interfaces.ActionPoint;
 using ActivityAssistent.WebV2.Client.Interfaces.Conversations;
 using ActivityAssistent.WebV2.Client.Interfaces.Identity;
 using ActivityAssistent.WebV2.Client.Services;
 using ActivityAssistent.WebV2.Client.Services.AuthService;
+using ActivityAssistent.WebV2.Client.Services.ActionPointService;
 using ActivityAssistent.WebV2.Client.Services.Companies;
 using ActivityAssistent.WebV2.Client.Services.ConversationService;
 using ActivityAssistent.WebV2.Components;
@@ -40,6 +42,7 @@ Action<HttpClient> ConfigureBackendClient = Client =>
 };
 
 Builder.Services.AddHttpClient<IAuthService, WebAuthService>(ConfigureBackendClient);
+Builder.Services.AddHttpClient<IActionPointService, WebActionPointService>(ConfigureBackendClient);
 Builder.Services.AddHttpClient<IConversationService, WebConversationService>(ConfigureBackendClient);
 Builder.Services.AddHttpClient<ICompanyService, WebCompanyService>(ConfigureBackendClient);
 Builder.Services.AddHttpClient("ApiClient", ConfigureBackendClient);

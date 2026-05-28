@@ -1,24 +1,370 @@
 @page "/SalesConversation/{ConversationId:guid}/ActionPoints"
 @using MudBlazor
+@using ActivityAssistent.Shared.Dtos.ActionPoints
+@using ActivityAssistent.Shared.Dtos.Identity
+@using ActivityAssistent.WebV2.Client.Interfaces.ActionPoint
+@inject IActionPointService ActionPointService
+@inject ISnackbar Snackbar
+@inject NavigationManager NavManager
+@implements IDisposable
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-6">
-	<MudText Typo="Typo.h4" Color="Color.Primary">Actiepunten</MudText>
-	<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-		Beheer de actiepunten van dit gesprek.
-	</MudText>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
+	<MudGrid Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+		<MudItem>
+			<MudText Typo="Typo.h4" Color="Color.Primary">Actiepunten</MudText>
+			<MudText Typo="Typo.body2" Color="Color.Secondary">
+				Beheer de actiepunten van dit gesprek.
+			</MudText>
+		</MudItem>
+		<MudItem>
+			<MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.ArrowBack" OnClick="NavigateBack">
+				Terug naar gesprek
+			</MudButton>
+		</MudItem>
+	</MudGrid>
 
-	<MudPaper Elevation="2" Class="pa-4">
-		<MudText Typo="Typo.subtitle1">Takenlijst</MudText>
-		<MudText Typo="Typo.body2" Color="Color.Secondary">
-			Hier komt het overzicht van taken en statussen.
+	<MudPaper Elevation="2" Class="pa-4 mb-6">
+		<MudText Typo="Typo.subtitle1">@FormTitle</MudText>
+		<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+			Vul de gegevens in en sla het actiepunt op.
 		</MudText>
-		<MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4">
-			Taak toevoegen
-		</MudButton>
+
+		<MudForm @ref="Form" @bind-IsValid="IsFormValid">
+			<MudGrid Spacing="3">
+				<MudItem xs="12">
+					<MudTextField T="string"
+								Label="Omschrijving"
+								Required="true"
+								RequiredError="Omschrijving is verplicht"
+								Variant="Variant.Outlined"
+								@bind-Value="Description" />
+				</MudItem>
+				<MudItem xs="12" sm="6">
+					<MudDatePicker Label="Vervaldatum"
+								   @bind-Date="DueDate"
+								   Variant="Variant.Outlined"
+								   Editable="true" />
+				</MudItem>
+				<MudItem xs="12" sm="6">
+					<MudSelect T="Guid"
+							   Label="Toewijzen aan"
+							   Required="true"
+							   RequiredError="Selecteer een medewerker"
+							   Variant="Variant.Outlined"
+							   @bind-Value="SelectedSalesUserId">
+						<MudSelectItem Value="@(Guid.Empty)">-- Selecteer een medewerker --</MudSelectItem>
+						@foreach (var user in DelegationUsers)
+						{
+							<MudSelectItem Value="@user.UserId">@user.FullName</MudSelectItem>
+						}
+					</MudSelect>
+				</MudItem>
+				<MudItem xs="12" sm="6" Class="d-flex align-center">
+					<MudCheckBox T="bool" Label="Voltooid" @bind-Checked="IsCompleted" />
+				</MudItem>
+				<MudItem xs="12" Class="d-flex justify-end">
+					@if (IsEditMode)
+					{
+						<MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CancelEdit" Class="mr-2">
+							Annuleren
+						</MudButton>
+					}
+					<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveActionPoint" Disabled="@(!IsFormValid || IsSaving)">
+						@if (IsSaving)
+						{
+							<MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+							<MudText Class="ms-2">Opslaan...</MudText>
+						}
+						else
+						{
+							<MudText>@FormButtonText</MudText>
+						}
+					</MudButton>
+				</MudItem>
+			</MudGrid>
+		</MudForm>
+	</MudPaper>
+
+	<MudPaper Elevation="2">
+		@if (IsLoading)
+		{
+			<div class="d-flex justify-center align-center pa-12">
+				<MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+				<MudText Class="ml-4">Actiepunten laden...</MudText>
+			</div>
+		}
+		else
+		{
+			<MudTable Items="ActionPointItems" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+				<HeaderContent>
+					<MudTh>Omschrijving</MudTh>
+					<MudTh>Vervaldatum</MudTh>
+					<MudTh>Status</MudTh>
+					<MudTh>Medewerker</MudTh>
+					<MudTh Style="text-align: right;">Acties</MudTh>
+				</HeaderContent>
+				<RowTemplate>
+					<MudTd DataLabel="Omschrijving">@context.Description</MudTd>
+					<MudTd DataLabel="Vervaldatum">@context.DueDate.ToString("dd-MM-yyyy")</MudTd>
+					<MudTd DataLabel="Status">
+						<MudChip T="string" Color="@(context.IsCompleted ? Color.Success : Color.Warning)" Size="Size.Small">
+							@(context.IsCompleted ? "Voltooid" : "Open")
+						</MudChip>
+					</MudTd>
+					<MudTd DataLabel="Medewerker">@GetUserName(context.SalesUserId)</MudTd>
+					<MudTd DataLabel="Acties" Style="text-align: right;">
+						<MudIconButton Icon="@Icons.Material.Filled.Done"
+									 Color="Color.Success"
+									 Size="Size.Small"
+									 OnClick="() => ToggleCompleted(context)" />
+						<MudIconButton Icon="@Icons.Material.Filled.Edit"
+									 Color="Color.Primary"
+									 Size="Size.Small"
+									 OnClick="() => StartEdit(context)" />
+						<MudIconButton Icon="@Icons.Material.Filled.Delete"
+									 Color="Color.Error"
+									 Size="Size.Small"
+									 OnClick="() => DeleteActionPoint(context)" />
+					</MudTd>
+				</RowTemplate>
+				<NoRecordsContent>
+					<MudText Class="pa-4">Geen actiepunten gevonden.</MudText>
+				</NoRecordsContent>
+			</MudTable>
+		}
 	</MudPaper>
 </MudContainer>
 
 @code {
 	[Parameter]
 	public Guid ConversationId { get; set; }
+
+	[CascadingParameter]
+	public UserProfileDto? UserProfile { get; set; }
+
+	private MudForm Form;
+	private bool IsFormValid;
+	private bool IsLoading;
+	private bool IsSaving;
+	private bool IsEditMode;
+	private Guid? EditingActionPointId;
+	private Guid SelectedSalesUserId;
+	private string Description = string.Empty;
+	private DateTime? DueDate = DateTime.Today;
+	private bool IsCompleted;
+	private List<ActionPointDto> ActionPointItems = new();
+	private List<UserProfileDto> DelegationUsers = new();
+	private CancellationTokenSource TokenSource { get; set; } = new();
+
+	private string FormTitle => IsEditMode ? "Actiepunt bewerken" : "Nieuw actiepunt";
+	private string FormButtonText => IsEditMode ? "Opslaan" : "Actiepunt toevoegen";
+
+	protected override async Task OnInitializedAsync()
+	{
+		await LoadDelegationUsersAsync();
+		await LoadActionPointsAsync();
+	}
+
+	private async Task LoadDelegationUsersAsync()
+	{
+		try
+		{
+			var result = await ActionPointService.GetDelegationUsersAsync(TokenSource.Token);
+			DelegationUsers = result ?? new List<UserProfileDto>();
+			if (UserProfile?.UserId != null && !DelegationUsers.Any(x => x.UserId == UserProfile.UserId))
+			{
+				DelegationUsers.Insert(0, UserProfile);
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Fout bij laden medewerkers: {ex.Message}");
+			Snackbar.Add("Fout bij het laden van medewerkers.", Severity.Error);
+		}
+	}
+
+	private async Task LoadActionPointsAsync()
+	{
+		IsLoading = true;
+		try
+		{
+			var result = await ActionPointService.GetByConversationIdAsync(ConversationId, TokenSource.Token);
+			ActionPointItems = result?.ToList() ?? new List<ActionPointDto>();
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Fout bij laden actiepunten: {ex.Message}");
+			Snackbar.Add("Fout bij het laden van de actiepunten.", Severity.Error);
+		}
+		finally
+		{
+			IsLoading = false;
+		}
+	}
+
+	private async Task SaveActionPoint()
+	{
+		await Form.Validate();
+		if (!IsFormValid)
+		{
+			return;
+		}
+
+		IsSaving = true;
+		try
+		{
+			var salesUserId = SelectedSalesUserId == Guid.Empty
+				? UserProfile?.UserId ?? Guid.Empty
+				: SelectedSalesUserId;
+			var subNrId = UserProfile?.SubNrId ?? Guid.Empty;
+			var dueDate = DueDate ?? DateTime.Today;
+
+			if (IsEditMode && EditingActionPointId.HasValue)
+			{
+				var updateDto = new UpdateActionPointDto
+				{
+					ActionPointId = EditingActionPointId.Value,
+					ConversationId = ConversationId,
+					Description = Description,
+					SalesUserId = salesUserId,
+					DueDate = dueDate,
+					IsCompleted = IsCompleted,
+					SubNrId = subNrId
+				};
+
+				var updated = await ActionPointService.UpdateActionPointAsync(updateDto, TokenSource.Token);
+				var index = ActionPointItems.FindIndex(x => x.ActionPointId == updated.ActionPointId);
+				if (index >= 0)
+				{
+					ActionPointItems[index] = updated;
+				}
+				Snackbar.Add("Actiepunt bijgewerkt.", Severity.Success);
+			}
+			else
+			{
+				var createDto = new CreateActionPointDto
+				{
+					ConversationId = ConversationId,
+					Description = Description,
+					SalesUserId = salesUserId,
+					DueDate = dueDate,
+					IsCompleted = IsCompleted,
+					SubNrId = subNrId
+				};
+
+				var created = await ActionPointService.CreateActionPointAsync(createDto, TokenSource.Token);
+				if (created.ActionPointId != Guid.Empty)
+				{
+					ActionPointItems.Add(created);
+					Snackbar.Add("Actiepunt toegevoegd.", Severity.Success);
+				}
+			}
+
+			ResetForm();
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Fout bij opslaan actiepunt: {ex.Message}");
+			Snackbar.Add("Fout bij het opslaan van het actiepunt.", Severity.Error);
+		}
+		finally
+		{
+			IsSaving = false;
+		}
+	}
+
+	private void StartEdit(ActionPointDto actionPoint)
+	{
+		IsEditMode = true;
+		EditingActionPointId = actionPoint.ActionPointId;
+		SelectedSalesUserId = actionPoint.SalesUserId;
+		Description = actionPoint.Description;
+		DueDate = actionPoint.DueDate;
+		IsCompleted = actionPoint.IsCompleted;
+	}
+
+	private async Task ToggleCompleted(ActionPointDto actionPoint)
+	{
+		var salesUserId = actionPoint.SalesUserId;
+		var subNrId = UserProfile?.SubNrId ?? Guid.Empty;
+		var updateDto = new UpdateActionPointDto
+		{
+			ActionPointId = actionPoint.ActionPointId,
+			ConversationId = actionPoint.ConversationId,
+			Description = actionPoint.Description,
+			SalesUserId = salesUserId,
+			DueDate = actionPoint.DueDate,
+			IsCompleted = !actionPoint.IsCompleted,
+			SubNrId = subNrId
+		};
+
+		try
+		{
+			var updated = await ActionPointService.UpdateActionPointAsync(updateDto, TokenSource.Token);
+			var index = ActionPointItems.FindIndex(x => x.ActionPointId == updated.ActionPointId);
+			if (index >= 0)
+			{
+				ActionPointItems[index] = updated;
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Fout bij updaten status: {ex.Message}");
+			Snackbar.Add("Fout bij het updaten van de status.", Severity.Error);
+		}
+	}
+
+	private async Task DeleteActionPoint(ActionPointDto actionPoint)
+	{
+		try
+		{
+			var result = await ActionPointService.DeleteActionPointAsync(actionPoint.ActionPointId, TokenSource.Token);
+			if (result)
+			{
+				ActionPointItems.Remove(actionPoint);
+				Snackbar.Add("Actiepunt verwijderd.", Severity.Success);
+			}
+			else
+			{
+				Snackbar.Add("Actiepunt kon niet worden verwijderd.", Severity.Warning);
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Fout bij verwijderen: {ex.Message}");
+			Snackbar.Add("Fout bij het verwijderen van het actiepunt.", Severity.Error);
+		}
+	}
+
+	private void CancelEdit()
+	{
+		ResetForm();
+	}
+
+	private void ResetForm()
+	{
+		IsEditMode = false;
+		EditingActionPointId = null;
+		SelectedSalesUserId = UserProfile?.UserId ?? Guid.Empty;
+		Description = string.Empty;
+		DueDate = DateTime.Today;
+		IsCompleted = false;
+	}
+
+	private void NavigateBack()
+	{
+		NavManager.NavigateTo($"/SalesConversation/Detail/{ConversationId}");
+	}
+
+	private string GetUserName(Guid userId)
+	{
+		var user = DelegationUsers.FirstOrDefault(x => x.UserId == userId);
+		return user?.FullName ?? userId.ToString();
+	}
+
+	public void Dispose()
+	{
+		TokenSource.Cancel();
+		TokenSource.Dispose();
+	}
 }
