@@ -25,7 +25,7 @@ namespace ActivityAssistent.App.Auth
                 var Handler = new JwtSecurityTokenHandler();
                 var JwtToken = Handler.ReadJwtToken(SavedToken);
 
-                if (JwtToken.ValidTo < DateTime.Now)
+                if (JwtToken.ValidTo < DateTime.UtcNow)
                 {
 
                     SecureStorage.Default.Remove(TokenKey);
@@ -33,7 +33,12 @@ namespace ActivityAssistent.App.Auth
                     return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
                 }
 
-                var Identity = new ClaimsIdentity(JwtToken.Claims, "jwt", "name", "role");
+                var Identity = new ClaimsIdentity(
+                                    JwtToken.Claims,
+                                    "jwt",
+                                    ClaimTypes.Name,
+                                    ClaimTypes.Role);
+
                 var User = new ClaimsPrincipal(Identity);
                 return new AuthenticationState(User);
 

@@ -1,0 +1,97 @@
+@page "/SalesConversation/Record"
+@using MudBlazor
+
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-6">
+	<MudText Typo="Typo.h4" Color="Color.Primary">Record conversation</MudText>
+	<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+		Start and stop a recording and save the conversation for later analysis.
+	</MudText>
+
+	<MudPaper Elevation="2" Class="pa-4">
+		<MudText Typo="Typo.subtitle1">Recording controls</MudText>
+		<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+			Use the buttons below to start, stop, and save a recording.
+		</MudText>
+
+		<MudStack Row="true" Spacing="2" Class="mb-4">
+			<MudButton Variant="Variant.Filled"
+						 Color="Color.Primary"
+						 StartIcon="@Icons.Material.Filled.Mic"
+						 Disabled="@(IsRecording || IsBusy)"
+						 OnClick="StartRecordingAsync">
+				Start recording
+			</MudButton>
+			<MudButton Variant="Variant.Outlined"
+						 Color="Color.Error"
+						 StartIcon="@Icons.Material.Filled.StopCircle"
+						 Disabled="@(!IsRecording || IsBusy)"
+						 OnClick="StopRecordingAsync">
+				Stop recording
+			</MudButton>
+			<MudButton Variant="Variant.Outlined"
+						 Color="Color.Secondary"
+						 StartIcon="@Icons.Material.Filled.Save"
+						 Disabled="@(IsRecording || IsBusy || !HasRecording)"
+						 OnClick="SaveRecordingAsync">
+				Save
+			</MudButton>
+		</MudStack>
+
+		<MudText Typo="Typo.caption" Color="Color.Secondary">@StatusMessage</MudText>
+	</MudPaper>
+</MudContainer>
+
+@code {
+	private bool IsRecording { get; set; }
+	private bool IsBusy { get; set; }
+	private bool HasRecording { get; set; }
+	private string StatusMessage { get; set; } = "Ready to record.";
+
+	private async Task StartRecordingAsync()
+	{
+		IsBusy = true;
+		try
+		{
+			IsRecording = true;
+			HasRecording = false;
+			StatusMessage = "Recording started...";
+			await Task.CompletedTask;
+		}
+		finally
+		{
+			IsBusy = false;
+		}
+	}
+
+	private async Task StopRecordingAsync()
+	{
+		IsBusy = true;
+		try
+		{
+			IsRecording = false;
+			HasRecording = true;
+			StatusMessage = "Recording stopped. You can save now.";
+			await Task.CompletedTask;
+		}
+		finally
+		{
+			IsBusy = false;
+		}
+	}
+
+	private async Task SaveRecordingAsync()
+	{
+		IsBusy = true;
+		try
+		{
+			StatusMessage = "Saving recording...";
+			await Task.CompletedTask;
+			StatusMessage = "Recording saved.";
+		}
+		finally
+		{
+			IsBusy = false;
+		}
+	}
+}

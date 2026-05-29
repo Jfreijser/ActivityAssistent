@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using ActivityAssistent.App.Auth;
+﻿using ActivityAssistent.App.Auth;
 using ActivityAssistent.App.Interfaces.ActionPoint;
 using ActivityAssistent.Shared.Dtos.ActionPoints;
 using ActivityAssistent.Shared.Dtos.Identity;
-using static System.Net.WebRequestMethods;
+using ActivityAssistent.Shared.Dtos.Response;
 
 namespace ActivityAssistent.App.Services
 {
@@ -13,37 +10,170 @@ namespace ActivityAssistent.App.Services
     {
         public Task<ActionPointDto> CreateActionPointAsync(CreateActionPointDto ActionPoint, CancellationToken Token)
         {
-            throw new NotImplementedException();
+            return CreateActionPointInternalAsync(ActionPoint, Token);
         }
 
         public Task<bool> DeleteActionPointAsync(Guid ActionPointId, CancellationToken Token)
         {
-            throw new NotImplementedException();
+            return DeleteActionPointInternalAsync(ActionPointId, Token);
         }
 
         public Task<ActionPointDto> GetActionPointByIdAsync(Guid ActionPointId, CancellationToken Token)
         {
-            throw new NotImplementedException();
+            return GetActionPointByIdInternalAsync(ActionPointId, Token);
         }
 
         public Task<List<ActionPointDto>> GetActiveActionPointsAsync(string UserId, CancellationToken Token)
         {
-            throw new NotImplementedException();
+            return GetActiveActionPointsInternalAsync(UserId, Token);
         }
 
         public Task<List<ActionPointDto>> GetByConversationIdAsync(Guid ConversationId, CancellationToken Token)
         {
-            throw new NotImplementedException();
+            return GetByConversationIdInternalAsync(ConversationId, Token);
         }
 
         public Task<List<UserProfileDto>> GetDelegationUsersAsync(CancellationToken Token)
         {
-            throw new NotImplementedException();
+            return GetDelegationUsersInternalAsync(Token);
         }
 
         public Task<ActionPointDto> UpdateActionPointAsync(UpdateActionPointDto UpdatedActionPoint, CancellationToken Token)
         {
-            throw new NotImplementedException();
+            return UpdateActionPointInternalAsync(UpdatedActionPoint, Token);
+        }
+
+        private async Task<ActionPointDto> CreateActionPointInternalAsync(CreateActionPointDto ActionPoint, CancellationToken Token)
+        {
+            try
+            {
+                var response = await PostAsync<ApiResponse<ActionPointDto>>("api/ActionPoint/create", ActionPoint, Token);
+
+                if (response.IsSuccess)
+                {
+                    return response.Data;
+                }
+
+                return new ActionPointDto();
+            }
+            catch (Exception)
+            {
+                return new ActionPointDto();
+            }
+        }
+
+        private async Task<List<UserProfileDto>> GetDelegationUsersInternalAsync(CancellationToken Token)
+        {
+            try
+            {
+                var response = await GetAsync<ApiResponse<List<UserProfileDto>>>("api/ActionPoint/GetDelegationUsers", Token);
+
+                if (response == null || !response.IsSuccess)
+                {
+                    throw new HttpRequestException($"Error fetching delegation users: {response?.ErrorMessage}");
+                }
+
+                return response.Data;
+            }
+            catch (Exception)
+            {
+                throw new Exception("Failed to fetch delegation users.");
+            }
+        }
+
+        private async Task<bool> DeleteActionPointInternalAsync(Guid ActionPointId, CancellationToken Token)
+        {
+            var response = await DeleteAsync<ApiResponse<bool>>($"api/ActionPoint/delete/{ActionPointId}", Token);
+
+            if (response == null)
+            {
+                return false;
+            }
+
+            return response.IsSuccess && response.Data;
+        }
+
+        private async Task<List<ActionPointDto>> GetActiveActionPointsInternalAsync(string UserId, CancellationToken Token)
+        {
+            try
+            {
+                var response = await GetAsync<ApiResponse<List<ActionPointDto>>>($"api/ActionPoint/GetActiveByUser/{UserId}", Token);
+
+                if (!response.IsSuccess)
+                {
+                    throw new HttpRequestException($"Error fetching action points: {response.ErrorMessage}");
+                }
+
+                return response.Data;
+            }
+            catch (Exception)
+            {
+                throw new Exception("Failed to fetch action points.");
+            }
+        }
+
+        private async Task<List<ActionPointDto>> GetByConversationIdInternalAsync(Guid ConversationId, CancellationToken Token)
+        {
+            try
+            {
+                var response = await GetAsync<ApiResponse<List<ActionPointDto>>>($"api/ActionPoint/GetByConversation/{ConversationId}", Token);
+
+                if (!response.IsSuccess)
+                {
+                    throw new HttpRequestException($"Error fetching action points: {response.ErrorMessage}");
+                }
+
+                return response.Data;
+            }
+            catch (Exception)
+            {
+                throw new Exception("Failed to fetch action points.");
+            }
+        }
+
+        private async Task<ActionPointDto> GetActionPointByIdInternalAsync(Guid ActionPointId, CancellationToken Token)
+        {
+            try
+            {
+                var response = await GetAsync<ApiResponse<ActionPointDto>>($"api/ActionPoint/GetById/{ActionPointId}", Token);
+
+                if (response.IsSuccess)
+                {
+                    return response.Data;
+                }
+
+                return new ActionPointDto();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[API FOUT] Ophalen mislukt: {ex.Message}");
+                return new ActionPointDto();
+            }
+        }
+
+        private async Task<ActionPointDto> UpdateActionPointInternalAsync(UpdateActionPointDto UpdatedActionPoint, CancellationToken Token)
+        {
+            try
+            {
+                var result = await PutAsync<ApiResponse<ActionPointDto>>("api/ActionPoint/update", UpdatedActionPoint, Token);
+
+                if (!result.IsSuccess)
+                {
+                    throw new HttpRequestException($"Error updating action point: {result.ErrorMessage}");
+                }
+
+                if (result.Data == null)
+                {
+                    throw new HttpRequestException("The API update was successful, but the returned data was empty.");
+                }
+
+                return result.Data;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[API FOUT] Updaten mislukt: {ex.Message}");
+                throw;
+            }
         }
     }
 }

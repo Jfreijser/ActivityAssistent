@@ -6,3 +6,6 @@
 - Database name should be spelled "ActivityAssistent" (with double s).
 - User prefers integer identity primary keys (no GUIDs) and column names like Company.Name instead of CompanyName.
 - User decided to drop/remove SubNr from the database model (not needed).
+
+## Language Preferences
+- User wants conversation in Dutch but all UI text and errors in English.

@@ -30,7 +30,7 @@ namespace ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository
 
         public async Task<List<UserProfileDto>> GetUsersBySubNrIdAsync(Guid SubNrId, CancellationToken Token = default)
         {
-            string sql = "select UserId, FullName, Email, Role, SubNrId from Users where SubNrId = @SubNrId";
+            string sql = "select UserId, FullName, Email, RoleId, SubNrId from Users where SubNrId = @SubNrId";
             using (var conn = connection.CreateConnection())
             {
                 var result = await conn.QueryAsync<UserProfileDto>(sql, new { SubNrId });

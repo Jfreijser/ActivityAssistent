@@ -1,0 +1,92 @@
+@page "/login"
+@using Microsoft.AspNetCore.Authorization
+@using ActivityAssistent.App.Auth
+@attribute [AllowAnonymous]
+@using ActivityAssistent.App.Interfaces.Identity
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudPaper Elevation="4" Class="pa-8">
+        <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Primary" Class="mb-6">
+            Login
+        </MudText>
+
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4">@ErrorMessage</MudAlert>
+        }
+
+        <EditForm Model="@Model" OnValidSubmit="HandleLoginAsync">
+            <DataAnnotationsValidator />
+
+            <MudTextField T="string"
+                          Label="Email Address"
+                          Variant="Variant.Outlined"
+                          Class="mb-4"
+                          @bind-Value="Model.Email"
+                          For="@(() => Model.Email)"
+                          Required="true" />
+
+            <MudTextField T="string"
+                          Label="Password"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Password"
+                          Class="mb-6"
+                          @bind-Value="Model.Password"
+                          For="@(() => Model.Password)"
+                          Required="true" />
+
+            <MudButton FullWidth="true"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Size="Size.Large"
+                       ButtonType="ButtonType.Submit"
+                       Disabled="IsLoading">
+                @if (IsLoading)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/>
+                    <MudText>Logging in...</MudText>
+                }
+                else
+                {
+                    <MudText>Login</MudText>
+                }
+            </MudButton>
+        </EditForm>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private LoginCredentialsDto Model { get; set; } = new();
+    private string? ErrorMessage { get; set; }
+    private bool IsLoading { get; set; }
+
+    private async Task HandleLoginAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+
+        try
+        {
+            var Result = await AuthService.LoginAsync(Model, CancellationToken.None);
+
+            if (Result.IsSuccess)
+            {
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+                ErrorMessage = Result.ErrorMessage ?? "Invalid email or password.";
+            }
+        }
+        catch (Exception)
+        {
+            ErrorMessage = "Could not establish a connection to the server.";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+}

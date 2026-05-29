@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
+using ActivityAssistent.Shared.Dtos.Response;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ActivityAssistent.Api.Controllers
 {
@@ -36,7 +38,8 @@ namespace ActivityAssistent.Api.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<ActionResult<AuthResultDto>> LoginAsync([FromBody] LoginCredentialsDto credentials, CancellationToken token = default)
+        [AllowAnonymous]
+        public async Task<ActionResult<AuthResultDto>> LoginAsync(LoginCredentialsDto credentials, CancellationToken token = default)
         {
             try
             {

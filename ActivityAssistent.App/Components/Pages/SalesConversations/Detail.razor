@@ -1,0 +1,244 @@
+@page "/SalesConversation/Detail/{ConversationId:guid}"
+@using MudBlazor
+@using ActivityAssistent.Shared.Dtos.Conversations
+@using ActivityAssistent.Shared.Enums
+@using ActivityAssistent.App.Interfaces.Conversations
+@inject IConversationService ConversationService
+@inject NavigationManager NavManager
+@inject ISnackbar Snackbar
+@implements IDisposable
+@inject IDialogService DialogService
+
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+	@if (IsLoading)
+	{
+		<div class="d-flex justify-center align-center" style="height: 50vh;">
+			<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+		</div>
+	}
+	else if (CurrentConversation == null)
+	{
+		<MudAlert Severity="Severity.Error" Class="mt-4">
+			Het gesprek kon niet worden geladen of is niet gevonden.
+		</MudAlert>
+		<MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="NavigateBack" Class="mt-4">
+			Terug naar overzicht
+		</MudButton>
+	}
+	else
+	{
+		<MudPaper Elevation="4" Class="pa-6" Style="border-radius: 16px;">
+
+			@* Header *@
+			<div class="d-flex align-center justify-space-between mb-6">
+				<div class="d-flex align-center">
+					<MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
+								   OnClick="NavigateBack"
+								   Class="mr-4" />
+					<MudText Typo="Typo.h4" Color="Color.Primary"><b>@CurrentConversation.Title</b></MudText>
+				</div>
+
+				@* Visuele weergave van de enum status *@
+				<MudChip T="string" Color="GetStatusColor(CurrentConversation.Status)" Size="Size.Large">
+					@CurrentConversation.Status.ToString()
+				</MudChip>
+				<MudIconButton Icon="@Icons.Material.Filled.Edit"
+							   Color="Color.Primary"
+							   OnClick="OpenEditDialog" />
+			</div>
+
+			<MudDivider Class="mb-6" />
+
+			<MudGrid Class="mb-6" Spacing="2">
+				<MudItem xs="12" sm="6" md="3">
+					<MudButton Variant="Variant.Filled"
+							   Color="Color.Primary"
+							   FullWidth="true"
+							   StartIcon="@Icons.Material.Filled.Mic"
+							   OnClick="NavigateToRecord">
+						Opname starten
+					</MudButton>
+				</MudItem>
+				<MudItem xs="12" sm="6" md="3">
+					<MudButton Variant="Variant.Outlined"
+							   Color="Color.Primary"
+							   FullWidth="true"
+							   StartIcon="@Icons.Material.Filled.ListAlt"
+							   OnClick="NavigateToActionPoints">
+						Actiepunten
+					</MudButton>
+				</MudItem>
+				<MudItem xs="12" sm="6" md="3">
+					<MudButton Variant="Variant.Outlined"
+							   Color="Color.Secondary"
+							   FullWidth="true"
+							   StartIcon="@Icons.Material.Filled.Summarize"
+							   OnClick="NavigateToSummary">
+						Samenvatting
+					</MudButton>
+				</MudItem>
+				<MudItem xs="12" sm="6" md="3">
+					<MudButton Variant="Variant.Outlined"
+							   Color="Color.Info"
+							   FullWidth="true"
+							   StartIcon="@Icons.Material.Filled.AssignmentInd"
+							   OnClick="NavigateToTeamActionPoints">
+						Teamtaken
+					</MudButton>
+				</MudItem>
+			</MudGrid>
+
+			@* Detail Weergave *@
+			<MudGrid Spacing="4">
+
+				@* Klant Informatie *@
+				<MudItem xs="12" md="6">
+					<MudCard Elevation="0" Class="pa-4" Style="background-color: var(--mud-palette-background-grey);">
+						<MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-1">Klant / Bedrijf</MudText>
+						<div class="d-flex align-center">
+							<MudIcon Icon="@Icons.Material.Filled.Business" Color="Color.Primary" Class="mr-2" />
+							<MudText Typo="Typo.body1"><b>@CurrentConversation.CompanyName</b></MudText>
+						</div>
+					</MudCard>
+				</MudItem>
+
+				@* Datum Informatie *@
+				<MudItem xs="12" md="6">
+					<MudCard Elevation="0" Class="pa-4" Style="background-color: var(--mud-palette-background-grey);">
+						<MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-1">Datum & Tijd</MudText>
+						<div class="d-flex align-center">
+							<MudIcon Icon="@Icons.Material.Filled.Event" Color="Color.Primary" Class="mr-2" />
+							<MudText Typo="Typo.body1"><b>@CurrentConversation.MeetingDate.ToString("dd MMMM yyyy, HH:mm")</b></MudText>
+						</div>
+					</MudCard>
+				</MudItem>
+
+				@* Beschrijving / Notities *@
+				<MudItem xs="12">
+					<MudText Typo="Typo.h6" Class="mb-2">Beschrijving</MudText>
+					<MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--mud-palette-lines-default);">
+						@if (string.IsNullOrWhiteSpace(CurrentConversation.Description))
+						{
+							<MudText Typo="Typo.body2" Color="Color.Secondary"><i>Geen beschrijving of samenvatting beschikbaar.</i></MudText>
+						}
+						else
+						{
+							<MudText Typo="Typo.body1">@CurrentConversation.Description</MudText>
+						}
+					</MudPaper>
+				</MudItem>
+
+			</MudGrid>
+
+		</MudPaper>
+	}
+</MudContainer>
+
+@code {
+	[Parameter]
+	public Guid ConversationId { get; set; }
+
+	private ConversationDto CurrentConversation { get; set; }
+	private bool IsLoading { get; set; } = true;
+	private CancellationTokenSource TokenSource { get; set; } = new();
+
+	protected override async Task OnInitializedAsync()
+	{
+		try
+		{
+			IsLoading = true;
+			CurrentConversation = await ConversationService.GetConversationAsync(ConversationId, TokenSource.Token);
+		}
+		catch (Exception Ex)
+		{
+			Console.WriteLine($"Fout bij ophalen van gesprek: {Ex.Message}");
+			Snackbar.Add("Fout bij het laden van het gesprek.", Severity.Error);
+		}
+		finally
+		{
+			IsLoading = false;
+		}
+	}
+
+	private void NavigateBack()
+	{
+		NavManager.NavigateTo("/SalesConversation/SalesConversationIndex");
+	}
+
+	private void NavigateToRecord()
+	{
+		NavManager.NavigateTo("/SalesConversation/Record");
+	}
+
+	private void NavigateToActionPoints()
+	{
+		NavManager.NavigateTo($"/SalesConversation/{ConversationId}/ActionPoints");
+	}
+
+	private void NavigateToSummary()
+	{
+		NavManager.NavigateTo($"/SalesConversation/Summary/{ConversationId}");
+	}
+
+	private void NavigateToTeamActionPoints()
+	{
+		NavManager.NavigateTo("/SalesConversation/TeamActionPoints");
+	}
+
+	private async Task OpenEditDialog()
+	{
+		var updateDto = new UpdateConversationDto
+		{
+			ConversationId = CurrentConversation.ConversationId,
+			Title = CurrentConversation.Title,
+			MeetingDate = CurrentConversation.MeetingDate,
+			Description = CurrentConversation.Description,
+			Status = CurrentConversation.Status
+		};
+
+		var parameters = new DialogParameters<EditConversationDialog>
+	{
+		{ x => x.Model, updateDto }
+	};
+
+		var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+		var dialog = await DialogService.ShowAsync<EditConversationDialog>("Edit Conversation", parameters, options);
+
+		var result = await dialog.Result;
+
+		if (!result.Canceled)
+		{
+			var updatedData = (UpdateConversationDto)result.Data;
+
+			 await ConversationService.UpdateConversationAsync(updatedData, TokenSource.Token);
+
+			CurrentConversation.Title = updatedData.Title;
+			CurrentConversation.MeetingDate = updatedData.MeetingDate;
+			CurrentConversation.Description = updatedData.Description;
+			CurrentConversation.Status = updatedData.Status;
+
+			StateHasChanged();
+			Snackbar.Add("Conversation updated successfully", Severity.Success);
+		}
+	}
+
+	private Color GetStatusColor(ConversationStatus Status)
+	{
+		return Status switch
+		{
+			ConversationStatus.Scheduled => Color.Info,
+			ConversationStatus.Recording => Color.Secondary,
+			ConversationStatus.Processing => Color.Warning,
+			ConversationStatus.Completed => Color.Success,
+			ConversationStatus.Failed => Color.Error,
+			_ => Color.Default
+		};
+	}
+
+	public void Dispose()
+	{
+		TokenSource.Cancel();
+		TokenSource.Dispose();
+	}
+}

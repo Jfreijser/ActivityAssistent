@@ -1,4 +1,8 @@
 ﻿using ActivityAssistent.App.Auth;
+using ActivityAssistent.App.Interfaces.ActionPoint;
+using ActivityAssistent.App.Interfaces.companies;
+using ActivityAssistent.App.Interfaces.Conversations;
+using ActivityAssistent.App.Interfaces.Identity;
 using ActivityAssistent.App.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Logging;
@@ -34,7 +38,10 @@ namespace ActivityAssistent.App
             builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();
 #endif
-            //builder.Services.AddHttpClient<IConversationService, MauiConversationService>(ConfigureBackendClient);
+            builder.Services.AddHttpClient<IConversationService, MauiConversationService>(ConfigureBackendClient);
+            builder.Services.AddHttpClient<IActionPointService, MauiActionPointService>(ConfigureBackendClient);
+            builder.Services.AddHttpClient<ICompanyService, MauiCompanyService>(ConfigureBackendClient);
+            builder.Services.AddHttpClient<IAuthService, MauiAuthService>(ConfigureBackendClient);
             builder.Services.AddScoped<IThemeService, ThemeService>();
             return builder.Build();
         }

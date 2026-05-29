@@ -1,0 +1,93 @@
+@using MudBlazor
+@using ActivityAssistent.Shared.Dtos.Identity
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="Form" @bind-IsValid="IsFormValid">
+            <MudGrid Spacing="3" Class="pa-2">
+                <MudItem xs="12">
+                    <MudTextField T="string"
+                                  Label="Description"
+                                  Required="true"
+                                  RequiredError="Description is required"
+                                  Variant="Variant.Outlined"
+                                  @bind-Value="Model.Description" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker Label="Due Date"
+                                   @bind-Date="Model.DueDate"
+                                   Variant="Variant.Outlined"
+                                   Editable="true" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="Guid"
+                               Label="Delegate Action Point"
+                               Value="Model.SelectedSalesUserId"
+                               ValueChanged="OnSelectedSalesUserIdChanged"
+                               ValueExpression="() => Model.SelectedSalesUserId"
+                               Variant="Variant.Outlined"
+                               AnchorOrigin="Origin.BottomCenter">
+
+                    <MudSelectItem T="Guid" Value="@(Guid.Empty)">-- Select a team member --</MudSelectItem>
+
+                        @if (DelegationUsers != null)
+                        {
+                            @foreach (var User in DelegationUsers)
+                            {
+                            <MudSelectItem T="Guid" Value="@User.UserId.GetValueOrDefault()">@User.FullName</MudSelectItem>
+                            }
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" Class="d-flex align-center">
+                    <MudCheckBox T="bool" Label="Completed" @bind-Checked="Model.IsCompleted" />
+                </MudItem>
+            </MudGrid>
+
+            <div class="d-flex justify-end mt-4">
+                <MudButton OnClick="Cancel" Color="Color.Default" Class="mr-2">Cancel</MudButton>
+                <MudButton ButtonType="ButtonType.Button" Color="Color.Primary" Variant="Variant.Filled" OnClick="Save">
+                    Save
+                </MudButton>
+            </div>
+        </MudForm>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public ActionPointDialogModel Model { get; set; } = new();
+
+    [Parameter]
+    public List<UserProfileDto> DelegationUsers { get; set; } = new();
+
+    private MudForm Form = default!;
+    private bool IsFormValid;
+
+    private async Task Save()
+    {
+        await Form.Validate();
+        if (!IsFormValid)
+        {
+            return;
+        }
+
+        MudDialog.Close(DialogResult.Ok(Model));
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void OnSelectedSalesUserIdChanged(Guid value)
+    {
+        Model.SelectedSalesUserId = value;
+    }
+}

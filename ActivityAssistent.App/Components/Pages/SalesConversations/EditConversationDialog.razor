@@ -1,0 +1,76 @@
+@using MudBlazor
+@using ActivityAssistent.Shared.Dtos.Conversations
+@using ActivityAssistent.Shared.Enums
+
+<MudDialog>
+	<DialogContent>
+		<EditForm Model="@Model" OnValidSubmit="HandleValidSubmit">
+			<DataAnnotationsValidator />
+
+			<MudGrid Spacing="3" Class="pa-2">
+				<MudItem xs="12">
+					<MudTextField @bind-Value="Model.Title"
+								  For="@(() => Model.Title)"
+								  Label="Title"
+								  Variant="Variant.Outlined" />
+				</MudItem>
+
+				<MudItem xs="12" sm="6">
+					<MudDatePicker @bind-Date="MeetingDateProxy"
+								   Label="Meeting Date"
+								   Variant="Variant.Outlined" />
+				</MudItem>
+
+				<MudItem xs="12" sm="6">
+					<MudSelect T="ConversationStatus"
+							   @bind-Value="Model.Status"
+							   For="@(() => Model.Status)"
+							   Label="Status"
+							   Variant="Variant.Outlined">
+						@foreach (ConversationStatus status in Enum.GetValues(typeof(ConversationStatus)))
+						{
+							<MudSelectItem Value="@status">@status.ToString()</MudSelectItem>
+						}
+					</MudSelect>
+				</MudItem>
+
+				<MudItem xs="12">
+					<MudTextField @bind-Value="Model.Description"
+								  For="@(() => Model.Description)"
+								  Label="Description"
+								  Lines="4"
+								  Variant="Variant.Outlined" />
+				</MudItem>
+			</MudGrid>
+
+			<div class="d-flex justify-end mt-4">
+				<MudButton OnClick="Cancel" Color="Color.Default" Class="mr-2">Cancel</MudButton>
+				<MudButton ButtonType="ButtonType.Submit" Color="Color.Primary" Variant="Variant.Filled">Save Changes</MudButton>
+			</div>
+		</EditForm>
+	</DialogContent>
+</MudDialog>
+
+@code {
+	[CascadingParameter]
+	IMudDialogInstance MudDialog { get; set; }
+
+	[Parameter]
+	public UpdateConversationDto Model { get; set; } = new();
+
+	private DateTime? MeetingDateProxy
+	{
+		get => Model.MeetingDate == default ? null : Model.MeetingDate;
+		set => Model.MeetingDate = value ?? DateTime.Today;
+	}
+
+	private void HandleValidSubmit()
+	{
+		MudDialog.Close(DialogResult.Ok(Model));
+	}
+
+	private void Cancel()
+	{
+		MudDialog.Cancel();
+	}
+}

@@ -12,16 +12,20 @@ namespace ActivityAssistent.App.Services
     {
         private async Task<T?> SendAsyncInternal<T>(HttpMethod Method, string Url, object? Content = null, CancellationToken Token = default)
         {
-            var AuthState = await AuthStateProvider.GetAuthenticationStateAsync();
-            var ApiToken = AuthState.User.FindFirst("ApiToken")?.Value;
+            var ApiToken = await AuthStateProvider.GetTokenAsync();
 
             var Request = new HttpRequestMessage(Method, Url);
 
+            // 2. Als het token bestaat, voeg hem toe aan de Authorization header
             if (!string.IsNullOrWhiteSpace(ApiToken))
+            {
                 Request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", ApiToken);
+            }
 
             if (Content != null)
+            {
                 Request.Content = JsonContent.Create(Content);
+            }
 
             var Response = await Http.SendAsync(Request, Token);
 

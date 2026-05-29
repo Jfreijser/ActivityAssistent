@@ -1,0 +1,122 @@
+@using ActivityAssistent.Shared.Dtos.Companies
+@using ActivityAssistent.App.Interfaces.companies
+@using MudBlazor
+@inject ISnackbar Snackbar
+@inject ICompanyService CustomerService
+@implements IDisposable
+
+<MudDialog>
+	<TitleContent>
+		<MudText Typo="Typo.h6">
+			<MudIcon Icon="@Icons.Material.Filled.Business" Class="mr-2" />
+			Add new customer
+		</MudText>
+	</TitleContent>
+
+	<DialogContent>
+		<MudText Typo="Typo.body2" Class="mb-4" Color="Color.Secondary">
+			Fill in some basic information about the customer.
+		</MudText>
+
+		<EditForm Model="@Model" OnValidSubmit="Submit">
+			<DataAnnotationsValidator />
+
+			<MudGrid Spacing="2">
+				<MudItem xs="12">
+					<MudTextField Label="Company Name"
+								  Variant="Variant.Outlined"
+								  MaxLength="100"
+								  For="@(() => Model.Name)"
+								  @bind-Value="Model.Name" />
+				</MudItem>
+
+				<MudItem xs="12" sm="6">
+					<MudTextField Label="Email Address"
+								  Variant="Variant.Outlined"
+								  InputType="InputType.Email"
+								  MaxLength="100"
+								  For="@(() => Model.Email)"
+								  @bind-Value="Model.Email" />
+				</MudItem>
+
+				<MudItem xs="12" sm="6">
+					<MudTextField Label="Phone Number"
+								  Variant="Variant.Outlined"
+								  InputType="InputType.Telephone"
+								  For="@(() => Model.PhoneNumber)"
+								  @bind-Value="Model.PhoneNumber" />
+				</MudItem>
+
+				<MudItem xs="12" sm="6">
+					<MudTextField Label="City"
+								  Variant="Variant.Outlined"
+								  InputType="InputType.Text"
+								  MaxLength="50"
+								  For="@(() => Model.City)"
+								  @bind-Value="Model.City" />
+				</MudItem>
+
+				<MudItem xs="12" sm="6">
+					<MudTextField Label="Address"
+								  Variant="Variant.Outlined"
+								  MaxLength="50"
+								  InputType="InputType.Text"
+								  For="@(() => Model.Address)"
+								  @bind-Value="Model.Address" />
+				</MudItem>
+			</MudGrid>
+
+			<div class="d-flex justify-end mt-6">
+				<MudButton OnClick="Cancel" Variant="Variant.Text" Color="Color.Secondary" Class="mr-2">
+					Cancel
+				</MudButton>
+				<MudButton ButtonType="ButtonType.Submit"
+						   Variant="Variant.Filled"
+						   Color="Color.Primary"
+						   Size="Size.Large">
+					Add customer
+				</MudButton>
+			</div>
+		</EditForm>
+	</DialogContent>
+</MudDialog>
+
+@code {
+	[CascadingParameter]
+	private IMudDialogInstance MudDialog { get; set; } = null!;
+
+	private CancellationTokenSource TokenSource { get; set; } = new();
+	private CreateCompanyDto Model { get; set; } = new();
+
+	private void Cancel()
+	{
+		MudDialog.Cancel();
+	}
+
+	private async Task Submit()
+	{
+		try
+		{
+			Model.CreatedOn = DateTime.Now;
+			var result = await CustomerService.CreateCompanyAsync(Model, TokenSource.Token);
+
+			if (!result)
+			{
+				Snackbar.Add("Fout: Ontvangen ongeldige reactie van de server.", Severity.Error);
+				return;
+			}
+
+			MudDialog.Close(DialogResult.Ok(result));
+		}
+		catch (Exception Ex)
+		{
+			Snackbar.Add($"Fout bij opslaan klant: {Ex.Message}", Severity.Error);
+		}
+	}
+
+	public void Dispose()
+	{
+		TokenSource.Cancel();
+		TokenSource.Dispose();
+	}
+}

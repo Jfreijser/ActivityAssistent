@@ -1,5 +1,255 @@
 ﻿@page "/"
+@* Deze tag beveiligt de pagina. Gasten worden hier nu geweigerd. *@
+@using Microsoft.AspNetCore.Authorization
+@using ActivityAssistent.Shared.Dtos.ActionPoints
+@using ActivityAssistent.Shared.Dtos.Conversations
+@using ActivityAssistent.Shared.Dtos.Identity
+@using ActivityAssistent.Shared.Enums
+@using ActivityAssistent.App.Interfaces.ActionPoint
+@using ActivityAssistent.App.Interfaces.Conversations
+@attribute [Authorize]
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IActionPointService ActionPointService
+@inject IConversationService ConversationService
+@inject NavigationManager NavManager
+@inject ISnackbar Snackbar
+@using MudBlazor
 
-<h1>Hello, world!</h1>
+<PageTitle>Dashboard - ActivityAssistent</PageTitle>
 
-Welcome to your new app.
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-8">
+	<MudGrid Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+		<MudItem>
+			<MudText Typo="Typo.h3" GutterBottom="true">Sales Dashboard</MudText>
+			<MudText Typo="Typo.body2" Color="Color.Secondary">
+				Overzicht van je gesprekken en actiepunten.
+			</MudText>
+		</MudItem>
+		<MudItem>
+			<MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Handshake" OnClick="NavigateToConversations">
+				Naar gesprekken
+			</MudButton>
+		</MudItem>
+	</MudGrid>
+
+	<MudGrid Class="mb-6">
+		<MudItem xs="12" sm="6" md="4">
+			<MudCard Elevation="4" Class="rounded-lg">
+				<MudCardHeader>
+					<CardHeaderContent>
+						<MudText Typo="Typo.h6">Welkom terug</MudText>
+						<MudText Typo="Typo.subtitle1" Color="Color.Primary">@UserProfile.FullName</MudText>
+					</CardHeaderContent>
+					<CardHeaderActions>
+						<MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Default" />
+					</CardHeaderActions>
+				</MudCardHeader>
+				<MudCardContent>
+					<MudText Typo="Typo.body2">Je persoonlijke overzicht is bijgewerkt.</MudText>
+				</MudCardContent>
+			</MudCard>
+		</MudItem>
+		<MudItem xs="12" sm="6" md="4">
+			<MudCard Elevation="4" Class="rounded-lg">
+				<MudCardHeader>
+					<CardHeaderContent>
+						<MudText Typo="Typo.h6">Open actiepunten</MudText>
+						<MudText Typo="Typo.h4" Color="Color.Warning">@OpenActionPointsCount</MudText>
+					</CardHeaderContent>
+					<CardHeaderActions>
+						<MudIcon Icon="@Icons.Material.Filled.ListAlt" Color="Color.Warning" />
+					</CardHeaderActions>
+				</MudCardHeader>
+				<MudCardContent>
+					<MudText Typo="Typo.body2">Actiepunten die nog openstaan.</MudText>
+				</MudCardContent>
+			</MudCard>
+		</MudItem>
+		<MudItem xs="12" sm="6" md="4">
+			<MudCard Elevation="4" Class="rounded-lg">
+				<MudCardHeader>
+					<CardHeaderContent>
+						<MudText Typo="Typo.h6">Gesprekken gepland</MudText>
+						<MudText Typo="Typo.h4" Color="Color.Info">@ScheduledConversationsCount</MudText>
+					</CardHeaderContent>
+					<CardHeaderActions>
+						<MudIcon Icon="@Icons.Material.Filled.Event" Color="Color.Info" />
+					</CardHeaderActions>
+				</MudCardHeader>
+				<MudCardContent>
+					<MudText Typo="Typo.body2">Aankomende gesprekken voor je agenda.</MudText>
+				</MudCardContent>
+			</MudCard>
+		</MudItem>
+	</MudGrid>
+
+	<MudGrid>
+		<MudItem xs="12" md="7">
+			<MudPaper Elevation="2" Class="pa-4">
+				<MudText Typo="Typo.h6" Class="mb-2">Actiepunten met prioriteit</MudText>
+				<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+					De eerstvolgende actiepunten op basis van vervaldatum.
+				</MudText>
+
+				@if (IsLoading)
+				{
+					<div class="d-flex justify-center align-center pa-6">
+						<MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+						<MudText Class="ml-4">Dashboard laden...</MudText>
+					</div>
+				}
+				else if (!PriorityActionPoints.Any())
+				{
+					<MudText>Geen open actiepunten gevonden.</MudText>
+				}
+				else
+				{
+					<MudList T="ActionPointDto" Dense="true">
+						@foreach (var actionPoint in PriorityActionPoints)
+						{
+							<MudListItem T="ActionPointDto">
+								<MudListItemText>
+									<MudText Typo="Typo.subtitle2">@actionPoint.Description</MudText>
+									<MudText Typo="Typo.caption" Color="Color.Secondary">Vervalt op @actionPoint.DueDate.ToString("dd-MM-yyyy")</MudText>
+								</MudListItemText>
+								<MudChip T="string" Color="@(actionPoint.IsCompleted ? Color.Success : Color.Warning)" Size="Size.Small">
+									@(actionPoint.IsCompleted ? "Voltooid" : "Open")
+								</MudChip>
+							</MudListItem>
+						}
+					</MudList>
+				}
+			</MudPaper>
+		</MudItem>
+
+		<MudItem xs="12" md="5">
+			<MudPaper Elevation="2" Class="pa-4">
+				<MudText Typo="Typo.h6" Class="mb-2">Laatste gesprekken</MudText>
+				<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+					Meest recente gesprekken en status.
+				</MudText>
+
+				@if (IsLoading)
+				{
+					<div class="d-flex justify-center align-center pa-6">
+						<MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+						<MudText Class="ml-4">Gesprekken laden...</MudText>
+					</div>
+				}
+				else if (!RecentConversations.Any())
+				{
+					<MudText>Geen gesprekken gevonden.</MudText>
+				}
+				else
+				{
+					<MudList T="ConversationDto" Dense="true">
+						@foreach (var conversation in RecentConversations)
+						{
+							<MudListItem T="ConversationDto" OnClick="() => NavigateToConversation(conversation.ConversationId)" Style="cursor: pointer;">
+								<MudListItemText>
+									<MudText Typo="Typo.subtitle2">@conversation.Title</MudText>
+									<MudText Typo="Typo.caption" Color="Color.Secondary">@conversation.MeetingDate.ToString("dd-MM-yyyy HH:mm")</MudText>
+								</MudListItemText>
+								<MudChip T="string" Color="GetStatusColor(conversation.Status)" Size="Size.Small">
+									@conversation.Status.ToString()
+								</MudChip>
+							</MudListItem>
+						}
+					</MudList>
+				}
+			</MudPaper>
+		</MudItem>
+	</MudGrid>
+</MudContainer>
+
+@code {
+	[CascadingParameter]
+	public UserProfileDto UserProfile { get; set; } = new();
+
+	private bool IsLoading { get; set; }
+	private List<ActionPointDto> ActionPoints { get; set; } = new();
+	private List<ConversationDto> Conversations { get; set; } = new();
+	private CancellationTokenSource TokenSource { get; set; } = new();
+
+	private int OpenActionPointsCount => ActionPoints.Count(x => !x.IsCompleted);
+	private int ScheduledConversationsCount => Conversations.Count(x => x.Status == ConversationStatus.Scheduled);
+	private IEnumerable<ActionPointDto> PriorityActionPoints => ActionPoints
+		.Where(x => !x.IsCompleted)
+		.OrderBy(x => x.DueDate)
+		.Take(5);
+	private IEnumerable<ConversationDto> RecentConversations => Conversations
+		.OrderByDescending(x => x.MeetingDate)
+		.Take(5);
+
+	private bool HasLoaded;
+
+	protected override async Task OnParametersSetAsync()
+	{
+		if (UserProfile?.UserId is null || HasLoaded)
+		{
+			return;
+		}
+
+		HasLoaded = true;
+		await LoadDashboardAsync();
+	}
+
+	private async Task LoadDashboardAsync()
+	{
+		IsLoading = true;
+		try
+		{
+			if (UserProfile?.UserId is null)
+			{
+				return;
+			}
+
+			var userId = UserProfile.UserId.ToString();
+			var actionPointsTask = ActionPointService.GetActiveActionPointsAsync(userId, TokenSource.Token);
+			var conversationsTask = ConversationService.GetAllAsync(TokenSource.Token);
+
+			await Task.WhenAll(actionPointsTask, conversationsTask);
+
+			ActionPoints = actionPointsTask.Result?.ToList() ?? new List<ActionPointDto>();
+			Conversations = conversationsTask.Result?.ToList() ?? new List<ConversationDto>();
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Fout bij laden dashboard: {ex.Message}");
+			Snackbar.Add("Fout bij het laden van het dashboard.", Severity.Error);
+		}
+		finally
+		{
+			IsLoading = false;
+		}
+	}
+
+	private void NavigateToConversations()
+	{
+		NavManager.NavigateTo("/SalesConversation/");
+	}
+
+	private void NavigateToConversation(Guid conversationId)
+	{
+		NavManager.NavigateTo($"/SalesConversation/Detail/{conversationId}");
+	}
+
+	private Color GetStatusColor(ConversationStatus Status)
+	{
+		return Status switch
+		{
+			ConversationStatus.Scheduled => Color.Info,
+			ConversationStatus.Recording => Color.Secondary,
+			ConversationStatus.Processing => Color.Warning,
+			ConversationStatus.Completed => Color.Success,
+			ConversationStatus.Failed => Color.Error,
+			_ => Color.Default
+		};
+	}
+
+	public void Dispose()
+	{
+		TokenSource.Cancel();
+		TokenSource.Dispose();
+	}
+}
