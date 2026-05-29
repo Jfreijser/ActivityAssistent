@@ -1,23 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.IO;
+using System.Net.Http;
+using System.Threading.Tasks;
 using ActivityAssistent.App.Auth;
 using ActivityAssistent.App.Interfaces.Audio;
+using Plugin.Maui.Audio;
+
 
 namespace ActivityAssistent.App.Services
 {
-    public class MauiAudioService(HttpClient Http, CustomAuthenticationStateProvider authStateProvider) : BaseService(Http, authStateProvider), IAudioRecorderService
+    // 1. De Primary Constructor: We vragen hier om IAudioManager (van de plugin!), niet je eigen interface.
+    public class MauiAudioService(
+        HttpClient Http,
+        CustomAuthenticationStateProvider AuthStateProvider,
+        IAudioManager AudioManager)
+        : BaseService(Http, AuthStateProvider), IAudioRecorderService
     {
-        public bool IsRecording => throw new NotImplementedException();
+        // 2. We maken een veld van het type IAudioRecorder (van de plugin) en initialiseren het direct
+        // met de AudioManager die we via de constructor-haakjes binnenkrijgen.
+        private readonly IAudioRecorder _audioRecorder = AudioManager.CreateRecorder();
 
-        public Task StartRecordingAsync()
+        public bool IsRecording => _audioRecorder.IsRecording;
+
+        public async Task StartRecordingAsync()
         {
-            throw new NotImplementedException();
+            await _audioRecorder.StartAsync();
         }
 
-        public Task<string> StopRecordingAsync()
+        public async Task<Stream> StopRecordingAsync()
         {
-            throw new NotImplementedException();
+            var RecordedAudio = await _audioRecorder.StopAsync();
+            return RecordedAudio.GetAudioStream();
         }
     }
 }

@@ -6,10 +6,8 @@ namespace ActivityAssistent.App.Interfaces.Audio
 {
     public  interface IAudioRecorderService
     {
-        bool IsRecording { get; }
-
         Task StartRecordingAsync();
-
-        Task<string> StopRecordingAsync();
+        Task<Stream> StopRecordingAsync();
+        bool IsRecording { get; }
     }
 }

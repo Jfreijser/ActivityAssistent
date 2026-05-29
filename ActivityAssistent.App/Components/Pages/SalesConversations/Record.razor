@@ -1,4 +1,7 @@
 @page "/SalesConversation/Record"
+@using ActivityAssistent.App.Interfaces.Audio;
+@inject IAudioRecorderService AudioService;
+@inject IDialogService DialogService
 @using MudBlazor
 
 
@@ -36,27 +39,83 @@
 						 OnClick="SaveRecordingAsync">
 				Save
 			</MudButton>
-		</MudStack>
+			@if (HasRecording && !string.IsNullOrEmpty(AudioSource))
+			{
+				<MudPaper Elevation="1" Class="pa-4 mt-4">
+					<MudText Typo="Typo.subtitle2" Class="mb-2">Play recording</MudText>
 
+					<audio controls src="@AudioSource" style="width: 100%;">
+						Your browser does not support the audio element.
+					</audio>
+				</MudPaper>
+			}
+		</MudStack>
+		<MudButton Variant="Variant.Filled"
+				   Color="Color.Success"
+				   Size="Size.Large"
+				   Disabled="@(IsRecording || IsBusy || !HasRecording)"
+				   OnClick="SaveRecordingAsync"
+				   Class="mt-4 rounded-pill px-6 shadow-lg">
+			@if (IsBusy)
+			{
+				<MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" Color="Color.Default" />
+				<MudText Class="ms-2">Saving...</MudText>
+			}
+			else
+			{
+				<MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Class="me-2" />
+				<MudText>Save & AI Analysis</MudText>
+			}
+		</MudButton>
 		<MudText Typo="Typo.caption" Color="Color.Secondary">@StatusMessage</MudText>
 	</MudPaper>
 </MudContainer>
+
+<MudDialogProvider />
 
 @code {
 	private bool IsRecording { get; set; }
 	private bool IsBusy { get; set; }
 	private bool HasRecording { get; set; }
+	private Stream recordedAudioStream;
+	private string AudioSource { get; set; }
+	private byte[] RecordedAudioBytes;
 	private string StatusMessage { get; set; } = "Ready to record.";
+	private Guid RecordingToken { get; set; }
 
 	private async Task StartRecordingAsync()
 	{
 		IsBusy = true;
 		try
 		{
+			bool HasPermission = false; 
+			// API crasht (FileNotFoundException) omdat we  naar een 'AppxManifest.xml' (Packaged app) zoeken maar zijn momenteel unpackegd 
+			if (DeviceInfo.Platform == DevicePlatform.WinUI)
+			{
+
+				HasPermission = true;
+			}
+			else
+			{
+				var Status = await Permissions.RequestAsync<Permissions.Microphone>();
+				HasPermission = (Status == PermissionStatus.Granted);
+			}
+
+			if (!HasPermission)
+			{
+				StatusMessage = "Toegang tot de microfoon is geweigerd.";
+				return;
+			}
+
+			await AudioService.StartRecordingAsync();
+
 			IsRecording = true;
 			HasRecording = false;
 			StatusMessage = "Recording started...";
-			await Task.CompletedTask;
+		}
+		catch (Exception Ex)
+		{
+			StatusMessage = $"Er is een fout opgetreden: {Ex.Message}";
 		}
 		finally
 		{
@@ -69,10 +128,26 @@
 		IsBusy = true;
 		try
 		{
+			var Base64String = string.Empty;
 			IsRecording = false;
 			HasRecording = true;
-			StatusMessage = "Recording stopped. You can save now.";
-			await Task.CompletedTask;
+			StatusMessage = "Recording stopped. You can save now or play the audio file.";
+			recordedAudioStream = await AudioService.StopRecordingAsync();
+			if (recordedAudioStream != null)
+			{
+				using var MemoryStream = new MemoryStream();
+				// coppy to momeroy stream 
+				await recordedAudioStream.CopyToAsync(MemoryStream);
+
+				// make a bite array of the memory stream
+				RecordedAudioBytes = MemoryStream.ToArray();
+
+				Base64String = Convert.ToBase64String(RecordedAudioBytes);
+				AudioSource = $"data:audio/wav;base64,{Base64String}";
+			}
+						
+
+			StateHasChanged();
 		}
 		finally
 		{
@@ -86,8 +161,49 @@
 		try
 		{
 			StatusMessage = "Saving recording...";
-			await Task.CompletedTask;
+			
+			string AppDataPath = FileSystem.AppDataDirectory; // lcoal storage 
+			string FolderPath = Path.Combine(AppDataPath, "Recordings");
+			if (!Directory.Exists(FolderPath))
+			{
+				Directory.CreateDirectory(FolderPath);
+			}
+			RecordingToken = Guid.NewGuid();
+			string FileName = $"SalesConversation_{RecordingToken}.wav";
+			string FilePath = Path.Combine(FolderPath, FileName);
+			if (RecordedAudioBytes != null && RecordedAudioBytes.Length > 0)
+			{
+				await File.WriteAllBytesAsync(FilePath, RecordedAudioBytes);
+				StatusMessage = $"Succes! Bestand opgeslagen in: {FilePath}";
+				bool? ProcessWithAi = await DialogService.ShowMessageBoxAsync(
+				title: "Audio Successfully Saved",
+				message: "Would you like the AI to immediately analyze this sales conversation for action points?",
+				yesText: "Yes, start AI analysis",
+				cancelText: "No, maybe later");
+
+				
+				if (ProcessWithAi == true)
+				{
+					StatusMessage = "AI analyse wordt opgestart...";
+
+					// TODO: Hier roep je straks de methode aan die de audio naar je REST API stuurt
+					// await AiService.AnalyzeConversationAsync(FilePath);
+				}
+				else
+				{
+					StatusMessage = "Klaar voor een nieuwe opname.";
+				}
+
+			}
+			else
+			{
+				StatusMessage = "Er is geen opgenomen audio gevonden om op te slaan.";
+			}
 			StatusMessage = "Recording saved.";
+		}
+		catch (Exception Ex)
+		{
+			StatusMessage = $"An error occurred while saving: {Ex.Message}";
 		}
 		finally
 		{

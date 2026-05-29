@@ -1,5 +1,6 @@
 ﻿using ActivityAssistent.App.Auth;
 using ActivityAssistent.App.Interfaces.ActionPoint;
+using ActivityAssistent.App.Interfaces.Audio;
 using ActivityAssistent.App.Interfaces.companies;
 using ActivityAssistent.App.Interfaces.Conversations;
 using ActivityAssistent.App.Interfaces.Identity;
@@ -7,6 +8,7 @@ using ActivityAssistent.App.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Logging;
 using MudBlazor.Services;
+using Plugin.Maui.Audio;
 namespace ActivityAssistent.App
 {
     public static class MauiProgram
@@ -25,6 +27,7 @@ namespace ActivityAssistent.App
             builder.Services.AddScoped<CustomAuthenticationStateProvider>();
             builder.Services.AddScoped<AuthenticationStateProvider>(ServiceProvider =>
                 ServiceProvider.GetRequiredService<CustomAuthenticationStateProvider>());
+            builder.Services.AddSingleton(AudioManager.Current);
 
             builder.Services.AddAuthorizationCore();
             builder.Services.AddMudServices();
@@ -42,6 +45,7 @@ namespace ActivityAssistent.App
             builder.Services.AddHttpClient<IActionPointService, MauiActionPointService>(ConfigureBackendClient);
             builder.Services.AddHttpClient<ICompanyService, MauiCompanyService>(ConfigureBackendClient);
             builder.Services.AddHttpClient<IAuthService, MauiAuthService>(ConfigureBackendClient);
+            builder.Services.AddHttpClient<IAudioRecorderService, MauiAudioService>(ConfigureBackendClient);
             builder.Services.AddScoped<IThemeService, ThemeService>();
             return builder.Build();
         }
