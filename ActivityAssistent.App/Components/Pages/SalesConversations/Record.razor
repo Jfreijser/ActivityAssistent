@@ -1,7 +1,8 @@
-@page "/SalesConversation/Record"
+@page "/SalesConversation/Record/{ConversationId:guid}"
 @using ActivityAssistent.App.Interfaces.Audio;
 @inject IAudioRecorderService AudioService;
 @inject IDialogService DialogService
+@inject NavigationManager NavigationManager
 @using MudBlazor
 
 
@@ -74,6 +75,9 @@
 <MudDialogProvider />
 
 @code {
+	[Parameter]
+	public Guid ConversationId { get; set; }
+
 	private bool IsRecording { get; set; }
 	private bool IsBusy { get; set; }
 	private bool HasRecording { get; set; }
@@ -186,8 +190,7 @@
 				{
 					StatusMessage = "AI analyse wordt opgestart...";
 
-					// TODO: Hier roep je straks de methode aan die de audio naar je REST API stuurt
-					// await AiService.AnalyzeConversationAsync(FilePath);
+					NavigationManager.NavigateTo($"/analysis/{RecordingToken}/{ConversationId}");
 				}
 				else
 				{

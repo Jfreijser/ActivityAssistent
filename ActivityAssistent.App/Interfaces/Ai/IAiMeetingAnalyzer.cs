@@ -7,8 +7,15 @@ namespace ActivityAssistent.App.Interfaces.Ai
 {
     public  interface IAiMeetingAnalyzer
     {
-        Task<MeetingAnalysisResultDto> AnalyzeMeetingAsync(AudioProcessingRequestDto RequestPayload, CancellationToken Token);
+        Task<MeetingAnalysisResultDto> AnalyzeMeetingAsync(AudioProcessingRequestDto RequestPayload, CancellationToken CancelToken);
+
         
+        Task<AiStatusDto> GetAiStatusAsync(Guid Token, CancellationToken CancelToken);
+
+        // 3. Noodrem: Stop een lopende analyse.
+        Task<bool> CancelAiAnalysisAsync(Guid Token);
+
+
     }
 }
 

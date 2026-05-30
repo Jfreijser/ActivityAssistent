@@ -9,13 +9,9 @@
 
   <ItemGroup>
     <Compile Remove="Services\ActionPoints\**" />
-    <Compile Remove="Services\Ai\**" />
     <Content Remove="Services\ActionPoints\**" />
-    <Content Remove="Services\Ai\**" />
     <EmbeddedResource Remove="Services\ActionPoints\**" />
-    <EmbeddedResource Remove="Services\Ai\**" />
     <None Remove="Services\ActionPoints\**" />
-    <None Remove="Services\Ai\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -27,6 +23,7 @@
     <PackageReference Include="Dapper" Version="2.1.79" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
+    <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.50.0" />
     <PackageReference Include="Microsoft.Identity.Web" Version="4.9.0" />
     <PackageReference Include="Microsoft.PowerPlatform.Dataverse.Client" Version="1.2.10" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.7" />

@@ -1,0 +1,146 @@
+﻿@page "/analysis/{Token:guid}/{ConversationId:guid}"
+@using System.IO
+@using ActivityAssistent.Shared.Dtos.Ai
+@using Microsoft.AspNetCore.Components
+@using Microsoft.Maui.Storage
+@inject NavigationManager NavigationManager
+@inject ActivityAssistent.App.Interfaces.Ai.IAiMeetingAnalyzer AiMeetingAnalyzer
+
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-6">
+    <MudText Typo="Typo.h4" Color="Color.Primary">Sales Conversation Analysis</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+        Azure AI Foundry is processing your recording token: @Token
+    </MudText>
+
+    @if (IsLoading)
+    {
+        <MudPaper Elevation="2" Class="pa-8 d-flex flex-column align-center justify-center">
+            <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" Class="mb-4" />
+            <MudText Typo="Typo.h6" Align="Align.Center">@StatusMessage</MudText>
+        </MudPaper>
+    }
+    else if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="my-4">
+            @ErrorMessage
+        </MudAlert>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="GoBack">
+            Back to Recorder
+        </MudButton>
+    }
+    else
+    {
+        <MudCard Elevation="2" Class="mt-4">
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Color="Color.Success" />
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">AI Transcription Result</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Format: JSON (Detailed Output)</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <!-- Prachtige codeblock container passend binnen het MudBlazor thema -->
+                <div style="background-color: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 8px; max-height: 500px; overflow-y: auto; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.85rem; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
+                    <pre style="margin: 0; white-space: pre-wrap;"><code>@JsonResult</code></pre>
+                </div>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="ProcessAudioAnalysisAsync"
+                           Class="me-2">
+                    Analyze Again
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Secondary"
+                           StartIcon="@Icons.Material.Filled.ArrowBack"
+                           OnClick="GoBack">
+                    New Recording
+                </MudButton>
+            </MudCardActions>
+        </MudCard>
+    }
+</MudContainer>
+
+
+
+@code {
+
+    [Parameter] public Guid Token { get; set; }
+    [Parameter] public Guid ConversationId { get; set; }
+
+    private bool IsLoading = true;
+    private string StatusMessage = "Finding recorded file...";
+    private string ErrorMessage = string.Empty;
+    private string JsonResult = string.Empty;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Start de analyse pas nadat de pagina voor het eerst is gerenderd
+            await ProcessAudioAnalysisAsync();
+        }
+    }
+    private async Task ProcessAudioAnalysisAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = string.Empty;
+        StatusMessage = "Bezig met verzenden naar de API voor analyse...";
+        StateHasChanged();
+
+        try
+        {
+            if (ConversationId == Guid.Empty)
+            {
+                ErrorMessage = "Missing ConversationId.";
+                return;
+            }
+
+            var folderPath = Path.Combine(FileSystem.AppDataDirectory, "Recordings");
+            var fileName = $"SalesConversation_{Token}.wav";
+            var filePath = Path.Combine(folderPath, fileName);
+
+            // We roepen een service aan die praat met JOUW API, niet direct met Azure.
+            var requestPayload = new AudioProcessingRequestDto
+            {
+                AudioToken = Token,
+                ConversationId = ConversationId,
+                filePath = filePath
+            };
+
+            var AnalysisResult = await AiMeetingAnalyzer.AnalyzeMeetingAsync(requestPayload, CancellationToken.None);
+
+            if (AnalysisResult != null)
+            {
+                JsonResult = AnalysisResult.filePath ?? string.Empty;
+            }
+            else
+            {
+                ErrorMessage = "Fout bij analyseren.";
+            }
+        }
+        catch (Exception Ex)
+        {
+            ErrorMessage = "Er is een onverwachte fout opgetreden: " + Ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/SalesConversation/Record");
+    }
+
+}

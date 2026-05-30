@@ -1,5 +1,6 @@
 ﻿using ActivityAssistent.App.Auth;
 using ActivityAssistent.App.Interfaces.ActionPoint;
+using ActivityAssistent.App.Interfaces.Ai;
 using ActivityAssistent.App.Interfaces.Audio;
 using ActivityAssistent.App.Interfaces.companies;
 using ActivityAssistent.App.Interfaces.Conversations;
@@ -16,6 +17,7 @@ namespace ActivityAssistent.App
         public static MauiApp CreateMauiApp()
         {
             var builder = MauiApp.CreateBuilder();
+
             builder
                 .UseMauiApp<App>()
                 .ConfigureFonts(fonts =>
@@ -46,6 +48,7 @@ namespace ActivityAssistent.App
             builder.Services.AddHttpClient<ICompanyService, MauiCompanyService>(ConfigureBackendClient);
             builder.Services.AddHttpClient<IAuthService, MauiAuthService>(ConfigureBackendClient);
             builder.Services.AddHttpClient<IAudioRecorderService, MauiAudioService>(ConfigureBackendClient);
+            builder.Services.AddHttpClient<IAiMeetingAnalyzer, MauiAiService>(ConfigureBackendClient);
             builder.Services.AddScoped<IThemeService, ThemeService>();
             return builder.Build();
         }
