@@ -73,5 +73,7 @@ namespace ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository
                 
             }
         }
+
+       
     }
 }

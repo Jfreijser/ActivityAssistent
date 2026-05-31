@@ -9,8 +9,8 @@ namespace ActivityAssistent.Shared.Dtos.Ai
     {
         public Guid Token { get; set; }
         public AiStatus CurrentState { get; set; }
+        public DateTime UpdatedAt { get; set; }
 
-        public string StatusMessage { get; set; }
 
     }
 }

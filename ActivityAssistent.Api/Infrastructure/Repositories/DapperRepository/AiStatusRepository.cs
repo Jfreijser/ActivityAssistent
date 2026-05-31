@@ -9,7 +9,34 @@ namespace ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository
 {
     public class AiStatusRepository(IDbConnectionFactory connection) : IAiStatusRepository
     {
-        public async Task<AiStatusDto> GetStatusByTokenAsync(Guid Token)
+        public Task<bool> DeleteAnalysisResultsAsync(Guid Token, CancellationToken CancelToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<AiStatusDto> GetStatusByTokenAsync(Guid Token, CancellationToken CancelToken)
+        {
+            var sql = "select Status as CurrentState, UpdatedAt from AiAnalysisState where Token = @Token";
+            var Params = new DynamicParameters();
+            Params.Add("@Token", Token);
+
+            var command = new CommandDefinition(sql, Params, cancellationToken: CancelToken);
+            try
+            {
+                using (var db = connection.CreateConnection())
+                {
+                    var result = await db.QueryFirstOrDefaultAsync<AiStatusDto>(command);
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching status from database: {ex.Message}");
+                return null;
+            }
+        }
+
+        public Task<bool> SaveAnalysisResultsAsync(MeetingAnalysisResultDto Model, CancellationToken CancelToken)
         {
             throw new NotImplementedException();
         }
@@ -40,10 +67,35 @@ namespace ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository
             
         }
 
-
         public Task<bool> SaveInitialStatusAsync(AiStatusDto StatusRecord)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<bool> UpdateAnalysisResultsAsync(MeetingAnalysisResultDto Model, CancellationToken CancelToken)
+        {
+            var sql = "update AiAnalysisState set Status = 50, AiSummary = @Summary, IsCompleted = 1, UpdatedAt = @UpdatedAt where ConversationId = @ConversationId and Token = @Token";
+
+            var Params = new DynamicParameters();
+            Params.Add("@Summary", Model.Summary);
+            Params.Add("@UpdatedAt", DateTime.Now);
+            Params.Add("@ConversationId", Model.ConversationId);
+            Params.Add("@Token", Model.Token);
+            var command = new CommandDefinition(sql, Params, cancellationToken: CancelToken);
+
+            using (var db = connection.CreateConnection())
+            {
+                try
+                {
+                    var result = await db.ExecuteAsync(command);
+                    return result > 0;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error updating analysis results in database: {ex.Message}");
+                    return false;
+                }
+            }
         }
 
         public async Task<bool> UpdateStatusAsync(Guid Token, AiStatus NewStatus)

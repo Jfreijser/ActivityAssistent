@@ -15,6 +15,8 @@ namespace ActivityAssistent.App.Interfaces.Ai
         // 3. Noodrem: Stop een lopende analyse.
         Task<bool> CancelAiAnalysisAsync(Guid Token);
 
+        Task<bool> SaveAnalysisResultsAsync(MeetingAnalysisResultDto Model, CancellationToken CancelToken);
+
 
     }
 }

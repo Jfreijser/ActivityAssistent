@@ -1,7 +1,9 @@
-﻿namespace ActivityAssistent.Api.Interfaces.Ai
+﻿using ActivityAssistent.Shared.Dtos.Ai;
+
+namespace ActivityAssistent.Api.Interfaces.Ai
 {
     public interface IAiAssistantService
     {
-        Task<string> ExtractActionPointsAsync(string TranscriptionText, CancellationToken CancelToken);
+        Task<MeetingAnalysisResultDto> ExtractActionPointsAsync(string TranscriptionText, CancellationToken CancelToken);
     }
 }

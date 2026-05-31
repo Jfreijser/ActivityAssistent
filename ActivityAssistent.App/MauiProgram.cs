@@ -37,6 +37,7 @@ namespace ActivityAssistent.App
             {
                 // Vergeet niet dat localhost voor een Android emulator straks 10.0.2.2 wordt
                 Client.BaseAddress = new Uri("https://localhost:7230");
+                Client.Timeout = TimeSpan.FromMinutes(5);
             };
 
 #if DEBUG

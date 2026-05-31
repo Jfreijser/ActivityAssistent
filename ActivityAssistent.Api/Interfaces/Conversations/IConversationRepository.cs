@@ -23,6 +23,7 @@ namespace ActivityAssistent.Api.Interfaces.Conversations
 
         // 6. Optioneel: Controleren of een offline gebufferd gesprek al in Dataverse bestaat
         Task<bool> ExistsAsync(Guid ConversationId, CancellationToken Token);
-        
+
+
     }
 }

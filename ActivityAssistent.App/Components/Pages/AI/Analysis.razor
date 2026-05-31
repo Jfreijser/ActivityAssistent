@@ -1,23 +1,38 @@
 ﻿@page "/analysis/{Token:guid}/{ConversationId:guid}"
 @using System.IO
+@using System.ComponentModel
+@using System.Reflection
 @using ActivityAssistent.Shared.Dtos.Ai
+@using ActivityAssistent.Shared.Enums
 @using Microsoft.AspNetCore.Components
 @using Microsoft.Maui.Storage
 @inject NavigationManager NavigationManager
 @inject ActivityAssistent.App.Interfaces.Ai.IAiMeetingAnalyzer AiMeetingAnalyzer
+@inject IDialogService DialogService
 
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-6">
     <MudText Typo="Typo.h4" Color="Color.Primary">Sales Conversation Analysis</MudText>
     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-        Azure AI Foundry is processing your recording token: @Token
+        Processing recording token: @Token
     </MudText>
 
     @if (IsLoading)
     {
         <MudPaper Elevation="2" Class="pa-8 d-flex flex-column align-center justify-center">
             <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" Class="mb-4" />
-            <MudText Typo="Typo.h6" Align="Align.Center">@StatusMessage</MudText>
+
+            @if (CurrentAiStatus != null)
+            {
+                <MudText Typo="Typo.h6" Align="Align.Center">@GetEnumDescription(CurrentAiStatus.CurrentState)</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    Last updated: @CurrentAiStatus.UpdatedAt.ToString("HH:mm:ss")
+                </MudText>
+            }
+            else
+            {
+                <MudText Typo="Typo.h6" Align="Align.Center">@StatusMessage</MudText>
+            }
         </MudPaper>
     }
     else if (!string.IsNullOrEmpty(ErrorMessage))
@@ -25,117 +40,161 @@
         <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="my-4">
             @ErrorMessage
         </MudAlert>
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.ArrowBack"
-                   OnClick="GoBack">
-            Back to Recorder
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.ArrowBack" OnClick="GoBack">
+            Back to recorder
         </MudButton>
     }
-    else
+    else if (AnalysisResult != null)
     {
         <MudCard Elevation="2" Class="mt-4">
             <MudCardHeader>
                 <CardHeaderAvatar>
-                    <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Color="Color.Success" />
+                    <MudIcon Icon="@Icons.Material.Filled.Edit" Color="Color.Success" />
                 </CardHeaderAvatar>
                 <CardHeaderContent>
-                    <MudText Typo="Typo.h6">AI Transcription Result</MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Format: JSON (Detailed Output)</MudText>
+                <MudText Typo="Typo.h6">Review & Edit Results</MudText>
                 </CardHeaderContent>
             </MudCardHeader>
             <MudCardContent>
-                <!-- Prachtige codeblock container passend binnen het MudBlazor thema -->
-                <div style="background-color: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 8px; max-height: 500px; overflow-y: auto; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.85rem; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
-                    <pre style="margin: 0; white-space: pre-wrap;"><code>@JsonResult</code></pre>
-                </div>
+                <MudTextField @bind-Value="AnalysisResult.Summary"
+                              Label="Conversation summary"
+                              Variant="Variant.Outlined"
+                              Lines="6"
+                              Class="mb-6" />
+
+                <MudText Typo="Typo.h6" Class="mb-3">Action items (@AnalysisResult.ActionPoints.Count)</MudText>
+
+                @if (AnalysisResult.ActionPoints.Any())
+                {
+                    <MudGrid>
+                        @foreach (var ActionPoint in AnalysisResult.ActionPoints)
+                        {
+                            <MudItem xs="12" Class="pa-2">
+                                <MudPaper Elevation="1" Class="pa-4 d-flex align-center gap-4">
+                                    <MudCheckBox @bind-Value="ActionPoint.IsCompleted" Color="Color.Primary" />
+                                    <MudTextField @bind-Value="ActionPoint.Description" Label="Action item" Variant="Variant.Text" FullWidth="true" />
+                                    <MudDatePicker @bind-Date="ActionPoint.DueDate" Label="Due date" />
+                                </MudPaper>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                }
             </MudCardContent>
             <MudCardActions>
-                <MudButton Variant="Variant.Outlined"
-                           Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Refresh"
-                           OnClick="ProcessAudioAnalysisAsync"
-                           Class="me-2">
-                    Analyze Again
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="me-2" OnClick="SaveResults">
+                    Save & confirm
                 </MudButton>
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Secondary"
-                           StartIcon="@Icons.Material.Filled.ArrowBack"
-                           OnClick="GoBack">
-                    New Recording
+                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.ArrowBack" OnClick="GoBack">
+                    Cancel
                 </MudButton>
             </MudCardActions>
         </MudCard>
     }
 </MudContainer>
 
+	@code {
+	[Parameter] public Guid Token { get; set; }
+	[Parameter] public Guid ConversationId { get; set; }
+
+	private bool IsLoading = true;
+	private string StatusMessage = "Connecting to server...";
+	private string ErrorMessage = string.Empty;
+
+	private AiStatusDto? CurrentAiStatus;
+	private MeetingAnalysisResultDto AnalysisResult;
+    private CancellationTokenSource TokenSource { get; set; } = new();
 
 
-@code {
 
-    [Parameter] public Guid Token { get; set; }
-    [Parameter] public Guid ConversationId { get; set; }
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			await StartAnalysisProcessAsync();
+		}
+	}
 
-    private bool IsLoading = true;
-    private string StatusMessage = "Finding recorded file...";
-    private string ErrorMessage = string.Empty;
-    private string JsonResult = string.Empty;
+	private async Task StartAnalysisProcessAsync()
+	{
+		IsLoading = true;
+		ErrorMessage = string.Empty;
+		StateHasChanged();
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
+		if (ConversationId == Guid.Empty)
+		{
+			ErrorMessage = "Missing ConversationId.";
+			IsLoading = false;
+			StateHasChanged();
+			return;
+		}
+
+		var FolderPath = Path.Combine(FileSystem.AppDataDirectory, "Recordings");
+		var FileName = $"SalesConversation_{Token}.wav";
+		var FilePath = Path.Combine(FolderPath, FileName);
+
+		var RequestPayload = new AudioProcessingRequestDto
         {
-            // Start de analyse pas nadat de pagina voor het eerst is gerenderd
-            await ProcessAudioAnalysisAsync();
-        }
-    }
-    private async Task ProcessAudioAnalysisAsync()
-    {
-        IsLoading = true;
-        ErrorMessage = string.Empty;
-        StatusMessage = "Bezig met verzenden naar de API voor analyse...";
-        StateHasChanged();
+            AudioToken = Token,
+            ConversationId = ConversationId,
+            filePath = FilePath
+        };
 
-        try
+		// 1. Start de taak, maar wacht er nog niet op (geen 'await' hier)
+		var AnalysisTask = AiMeetingAnalyzer.AnalyzeMeetingAsync(RequestPayload, TokenSource.Token);
+
+		// 2. Zolang de taak loopt, vraag elke seconde de status op
+        while (!AnalysisTask.IsCompleted)
         {
-            if (ConversationId == Guid.Empty)
+            CurrentAiStatus = await AiMeetingAnalyzer.GetAiStatusAsync(Token, CancellationToken.None);
+            if (CurrentAiStatus != null)
             {
-                ErrorMessage = "Missing ConversationId.";
-                return;
+                StateHasChanged();
             }
 
-            var folderPath = Path.Combine(FileSystem.AppDataDirectory, "Recordings");
-            var fileName = $"SalesConversation_{Token}.wav";
-            var filePath = Path.Combine(folderPath, fileName);
-
-            // We roepen een service aan die praat met JOUW API, niet direct met Azure.
-            var requestPayload = new AudioProcessingRequestDto
-            {
-                AudioToken = Token,
-                ConversationId = ConversationId,
-                filePath = filePath
-            };
-
-            var AnalysisResult = await AiMeetingAnalyzer.AnalyzeMeetingAsync(requestPayload, CancellationToken.None);
-
-            if (AnalysisResult != null)
-            {
-                JsonResult = AnalysisResult.filePath ?? string.Empty;
-            }
-            else
-            {
-                ErrorMessage = "Fout bij analyseren.";
-            }
+            await Task.Delay(1000);
         }
-        catch (Exception Ex)
-        {
-            ErrorMessage = "Er is een onverwachte fout opgetreden: " + Ex.Message;
-        }
-        finally
-        {
-            IsLoading = false;
-            StateHasChanged();
-        }
+
+
+		try
+		{
+			AnalysisResult = await AnalysisTask;
+
+			if (AnalysisResult == null)
+			{
+				ErrorMessage = "Analysis failed: no data received.";
+			}
+		}
+		catch (Exception Ex)
+		{
+			ErrorMessage = "An unexpected error occurred: " + Ex.Message;
+		}
+		finally
+		{
+			IsLoading = false;
+			StateHasChanged();
+		}
+	}
+
+	private string GetEnumDescription(Enum Value)
+	{
+		var fieldInfo = Value.GetType().GetField(Value.ToString());
+		if (fieldInfo != null)
+		{
+			var descriptionAttribute = (DescriptionAttribute)System.Attribute.GetCustomAttribute(fieldInfo, typeof(DescriptionAttribute));
+			if (descriptionAttribute != null)
+			{
+				return descriptionAttribute.Description;
+			}
+		}
+		return Value.ToString();
+	}
+
+	private async Task SaveResults()
+	{
+		AnalysisResult.Token = Token;
+		AnalysisResult.ConversationId = ConversationId;
+		var result = await AiMeetingAnalyzer.SaveAnalysisResultsAsync(AnalysisResult, TokenSource.Token);
+        Console.WriteLine("Saved!");
     }
 
     private void GoBack()
@@ -143,4 +202,9 @@
         NavigationManager.NavigateTo("/SalesConversation/Record");
     }
 
+    public void Dispose()
+    {
+        TokenSource.Cancel();
+        TokenSource.Dispose();
+    }
 }

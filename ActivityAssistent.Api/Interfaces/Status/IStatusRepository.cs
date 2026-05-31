@@ -6,6 +6,7 @@ namespace ActivityAssistent.Api.Interfaces.Status
     {
         Task <bool> SaveInitialStatusAsync(TRecord StatusRecord);
         Task <bool> UpdateStatusAsync(Guid Token, TStateEnum NewStatus);
-        Task<TRecord> GetStatusByTokenAsync(Guid Token);
+        Task<TRecord?> GetStatusByTokenAsync(Guid Token, CancellationToken CancelToken);
+       
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using ActivityAssistent.Shared.Dtos.ActionPoints;
 using ActivityAssistent.Shared.Enums;
 
 namespace ActivityAssistent.Shared.Dtos.Ai
@@ -19,5 +20,6 @@ namespace ActivityAssistent.Shared.Dtos.Ai
         public bool HasError { get; set; }
         public DateTime Created { get; set; }
         public DateTime Updated { get; set; }
+        public List<ActionPointDto> ActionPoints { get; set; }
     }
 }

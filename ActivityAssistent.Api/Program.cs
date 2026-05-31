@@ -71,6 +71,7 @@ builder.Services.AddScoped<IAiStatusRepository, AiStatusRepository>();
 //builder.Services.AddScoped<ICompanyRepository, DataverseCompanyRepository>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddHttpClient<ISpeechRecognitionService, SpeechRecognitionService>();
+builder.Services.AddHttpClient<IAiAssistantService, AiActionPointService>();
 //builder.Services.AddScoped<IUserRepository, DataverseUserRepository>();
 //builder.Services.AddScoped<IConversationRepository, ConversationRepository>();
 builder.Services.AddSwaggerGen();
