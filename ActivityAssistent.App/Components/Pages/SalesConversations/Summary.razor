@@ -1,6 +1,7 @@
 @page "/SalesConversation/Summary/{ConversationId:guid}"
 @using ActivityAssistent.Shared.Dtos.Ai
 @using MudBlazor
+@using Microsoft.Maui.Media
 @inject ActivityAssistent.App.Interfaces.Ai.IAiMeetingAnalyzer AiMeetingAnalyzer
 @inject ActivityAssistent.App.Interfaces.Conversations.IConversationService ConversationService
 
@@ -48,6 +49,9 @@
 							@item.AiSummary
 						}
 					</MudText>
+					<MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="string.IsNullOrWhiteSpace(item.AiSummary)" OnClick="() => SpeakSummaryAsync(item.AiSummary)">
+						Play summary
+					</MudButton>
 
 					<MudDivider Class="my-3" />
 
@@ -119,6 +123,16 @@
 		}
 
 		return AudioDataUrls.TryGetValue(filePath, out var dataUrl) ? dataUrl : null;
+	}
+
+	private async Task SpeakSummaryAsync(string? summary)
+	{
+		if (string.IsNullOrWhiteSpace(summary))
+		{
+			return;
+		}
+
+		await TextToSpeech.Default.SpeakAsync(summary);
 	}
 
 	protected override async Task OnInitializedAsync()
