@@ -17,6 +17,12 @@ namespace ActivityAssistent.Api.Services.AI
             throw new NotImplementedException();
         }
 
+        public async Task<IReadOnlyList<AiAnalysisStateRecord>> GetAnalysisStateByConversationIdAsync(Guid ConversationId, CancellationToken CancelToken)
+        {
+            var result = await AiStatusRepository.GetAnalysisStateByConversationIdAsync(ConversationId, CancelToken);
+            return result;
+        }
+
         public async Task<AiStatusDto?> GetAiStatusAsync(Guid Token, CancellationToken CancelToken)
         {
             var result = await AiStatusRepository.GetStatusByTokenAsync(Token, CancelToken);
@@ -86,6 +92,9 @@ namespace ActivityAssistent.Api.Services.AI
                 {
                     throw new Exception("Failed to extract action points from transcription.");
                 }
+                AiResponse.Token = RequestPayload.AudioToken;
+                AiResponse.ConversationId = RequestPayload.ConversationId;
+                await AiStatusRepository.UpdateAnalysisResultsAsync(AiResponse, Token);
                 return AiResponse;
 
 

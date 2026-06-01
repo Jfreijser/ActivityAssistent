@@ -7,11 +7,13 @@ using ActivityAssistent.WebV2.Client.Interfaces.companies;
 using ActivityAssistent.WebV2.Client.Interfaces.ActionPoint;
 using ActivityAssistent.WebV2.Client.Interfaces.Conversations;
 using ActivityAssistent.WebV2.Client.Interfaces.Identity;
+using ActivityAssistent.WebV2.Client.Interfaces.Ai;
 using ActivityAssistent.WebV2.Client.Services;
 using ActivityAssistent.WebV2.Client.Services.AuthService;
 using ActivityAssistent.WebV2.Client.Services.ActionPointService;
 using ActivityAssistent.WebV2.Client.Services.Companies;
 using ActivityAssistent.WebV2.Client.Services.ConversationService;
+using ActivityAssistent.WebV2.Client.Services.Ai;
 using ActivityAssistent.WebV2.Components;
 using ActivityAssistent.WebV2.Endpoints;
 using Microsoft.AspNetCore.Authentication;
@@ -45,6 +47,7 @@ Builder.Services.AddHttpClient<IAuthService, WebAuthService>(ConfigureBackendCli
 Builder.Services.AddHttpClient<IActionPointService, WebActionPointService>(ConfigureBackendClient);
 Builder.Services.AddHttpClient<IConversationService, WebConversationService>(ConfigureBackendClient);
 Builder.Services.AddHttpClient<ICompanyService, WebCompanyService>(ConfigureBackendClient);
+Builder.Services.AddHttpClient<IAiMeetingAnalyzer, WebAiService>(ConfigureBackendClient);
 Builder.Services.AddHttpClient("ApiClient", ConfigureBackendClient);
 
 

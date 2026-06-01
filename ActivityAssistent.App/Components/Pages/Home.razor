@@ -1,14 +1,14 @@
 ﻿@page "/"
-@* Deze tag beveiligt de pagina. Gasten worden hier nu geweigerd. *@
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using ActivityAssistent.App.Auth
 @using ActivityAssistent.Shared.Dtos.ActionPoints
 @using ActivityAssistent.Shared.Dtos.Conversations
 @using ActivityAssistent.Shared.Dtos.Identity
 @using ActivityAssistent.Shared.Enums
 @using ActivityAssistent.App.Interfaces.ActionPoint
 @using ActivityAssistent.App.Interfaces.Conversations
-@attribute [Authorize]
-@inject AuthenticationStateProvider AuthStateProvider
+@inject CustomAuthenticationStateProvider AuthStateProvider
 @inject IActionPointService ActionPointService
 @inject IConversationService ConversationService
 @inject NavigationManager NavManager
@@ -18,26 +18,31 @@
 <PageTitle>Dashboard - ActivityAssistent</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-8">
-	<MudGrid Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
-		<MudItem>
+	<AuthorizeView>
+		<Authorized>
+			<MudGrid Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+				<MudItem>
 			<MudText Typo="Typo.h3" GutterBottom="true">Sales Dashboard</MudText>
-			<MudText Typo="Typo.body2" Color="Color.Secondary">
-				Overzicht van je gesprekken en actiepunten.
+			<MudText Typo="Typo.body2" Color="Color.Default">
+				Overview of your conversations and action points.
 			</MudText>
-		</MudItem>
-		<MudItem>
+				</MudItem>
+				<MudItem>
 			<MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Handshake" OnClick="NavigateToConversations">
-				Naar gesprekken
+				View conversations
 			</MudButton>
-		</MudItem>
-	</MudGrid>
+			<MudButton Variant="Variant.Outlined" Color="Color.Error" StartIcon="@Icons.Material.Filled.Logout" OnClick="LogoutAsync" Class="ms-2">
+				Log out
+			</MudButton>
+				</MudItem>
+			</MudGrid>
 
-	<MudGrid Class="mb-6">
+			<MudGrid Class="mb-6">
 		<MudItem xs="12" sm="6" md="4">
 			<MudCard Elevation="4" Class="rounded-lg">
 				<MudCardHeader>
 					<CardHeaderContent>
-						<MudText Typo="Typo.h6">Welkom terug</MudText>
+					<MudText Typo="Typo.h6">Welcome back</MudText>
 						<MudText Typo="Typo.subtitle1" Color="Color.Primary">@UserProfile.FullName</MudText>
 					</CardHeaderContent>
 					<CardHeaderActions>
@@ -45,7 +50,7 @@
 					</CardHeaderActions>
 				</MudCardHeader>
 				<MudCardContent>
-					<MudText Typo="Typo.body2">Je persoonlijke overzicht is bijgewerkt.</MudText>
+					<MudText Typo="Typo.body2">Your personal overview is up to date.</MudText>
 				</MudCardContent>
 			</MudCard>
 		</MudItem>
@@ -53,7 +58,7 @@
 			<MudCard Elevation="4" Class="rounded-lg">
 				<MudCardHeader>
 					<CardHeaderContent>
-						<MudText Typo="Typo.h6">Open actiepunten</MudText>
+					<MudText Typo="Typo.h6">Open action points</MudText>
 						<MudText Typo="Typo.h4" Color="Color.Warning">@OpenActionPointsCount</MudText>
 					</CardHeaderContent>
 					<CardHeaderActions>
@@ -61,7 +66,7 @@
 					</CardHeaderActions>
 				</MudCardHeader>
 				<MudCardContent>
-					<MudText Typo="Typo.body2">Actiepunten die nog openstaan.</MudText>
+					<MudText Typo="Typo.body2">Action points that still need attention.</MudText>
 				</MudCardContent>
 			</MudCard>
 		</MudItem>
@@ -69,7 +74,7 @@
 			<MudCard Elevation="4" Class="rounded-lg">
 				<MudCardHeader>
 					<CardHeaderContent>
-						<MudText Typo="Typo.h6">Gesprekken gepland</MudText>
+					<MudText Typo="Typo.h6">Scheduled meetings</MudText>
 						<MudText Typo="Typo.h4" Color="Color.Info">@ScheduledConversationsCount</MudText>
 					</CardHeaderContent>
 					<CardHeaderActions>
@@ -77,44 +82,55 @@
 					</CardHeaderActions>
 				</MudCardHeader>
 				<MudCardContent>
-					<MudText Typo="Typo.body2">Aankomende gesprekken voor je agenda.</MudText>
+					<MudText Typo="Typo.body2">Upcoming meetings for your agenda.</MudText>
 				</MudCardContent>
 			</MudCard>
 		</MudItem>
-	</MudGrid>
+			</MudGrid>
 
-	<MudGrid>
+			<MudGrid>
 		<MudItem xs="12" md="7">
 			<MudPaper Elevation="2" Class="pa-4">
-				<MudText Typo="Typo.h6" Class="mb-2">Actiepunten met prioriteit</MudText>
-				<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-					De eerstvolgende actiepunten op basis van vervaldatum.
+				<MudText Typo="Typo.h6" Class="mb-2">Priority action points</MudText>
+				<MudText Typo="Typo.body2" Color="Color.Default" Class="mb-4">
+					Next action points based on due date.
 				</MudText>
 
 				@if (IsLoading)
 				{
-					<div class="d-flex justify-center align-center pa-6">
-						<MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-						<MudText Class="ml-4">Dashboard laden...</MudText>
-					</div>
+					<MudStack Spacing="2">
+						<MudSkeleton Height="24px" Width="40%" />
+						<MudSkeleton Height="18px" Width="70%" />
+						<MudSkeleton Height="18px" Width="60%" />
+						<MudSkeleton Height="18px" Width="50%" />
+					</MudStack>
 				}
 				else if (!PriorityActionPoints.Any())
 				{
-					<MudText>Geen open actiepunten gevonden.</MudText>
+					<MudStack AlignItems="AlignItems.Center" Spacing="1" Class="py-4">
+						<MudIcon Icon="@Icons.Material.Filled.TaskAlt" Size="Size.Large" Color="Color.Success" />
+						<MudText>No open action points found.</MudText>
+					</MudStack>
 				}
 				else
 				{
 					<MudList T="ActionPointDto" Dense="true">
 						@foreach (var actionPoint in PriorityActionPoints)
 						{
-							<MudListItem T="ActionPointDto">
+							<MudListItem T="ActionPointDto" OnClick="() => NavigateToConversation(actionPoint.ConversationId)" Style="cursor: pointer;">
 								<MudListItemText>
 									<MudText Typo="Typo.subtitle2">@actionPoint.Description</MudText>
-									<MudText Typo="Typo.caption" Color="Color.Secondary">Vervalt op @actionPoint.DueDate.ToString("dd-MM-yyyy")</MudText>
+									<MudText Typo="Typo.caption" Color="Color.Default">Due @actionPoint.DueDate.ToString("dd-MM-yyyy")</MudText>
 								</MudListItemText>
-								<MudChip T="string" Color="@(actionPoint.IsCompleted ? Color.Success : Color.Warning)" Size="Size.Small">
-									@(actionPoint.IsCompleted ? "Voltooid" : "Open")
-								</MudChip>
+								<MudStack Row="true" Spacing="1">
+									<MudChip T="string" Color="@(actionPoint.IsCompleted ? Color.Success : Color.Warning)" Size="Size.Small">
+										@(actionPoint.IsCompleted ? "Completed" : "Open")
+									</MudChip>
+									@if (IsOverdue(actionPoint))
+									{
+										<MudChip T="string" Color="Color.Error" Size="Size.Small">Overdue</MudChip>
+									}
+								</MudStack>
 							</MudListItem>
 						}
 					</MudList>
@@ -124,21 +140,35 @@
 
 		<MudItem xs="12" md="5">
 			<MudPaper Elevation="2" Class="pa-4">
-				<MudText Typo="Typo.h6" Class="mb-2">Laatste gesprekken</MudText>
-				<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-					Meest recente gesprekken en status.
-				</MudText>
+			<MudText Typo="Typo.h6" Class="mb-2">Recent meetings</MudText>
+			<MudText Typo="Typo.body2" Color="Color.Default" Class="mb-4">
+				Latest meetings and their status.
+			</MudText>
+
+			<MudTextField T="string"
+						 Label="Search meetings"
+						 Variant="Variant.Outlined"
+						 Adornment="Adornment.Start"
+						 AdornmentIcon="@Icons.Material.Filled.Search"
+						 Immediate="true"
+						 Class="mb-4"
+						 @bind-Value="ConversationFilter" />
 
 				@if (IsLoading)
 				{
-					<div class="d-flex justify-center align-center pa-6">
-						<MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-						<MudText Class="ml-4">Gesprekken laden...</MudText>
-					</div>
+					<MudStack Spacing="2">
+						<MudSkeleton Height="24px" Width="50%" />
+						<MudSkeleton Height="18px" Width="80%" />
+						<MudSkeleton Height="18px" Width="70%" />
+						<MudSkeleton Height="18px" Width="60%" />
+					</MudStack>
 				}
 				else if (!RecentConversations.Any())
 				{
-					<MudText>Geen gesprekken gevonden.</MudText>
+					<MudStack AlignItems="AlignItems.Center" Spacing="1" Class="py-4">
+						<MudIcon Icon="@Icons.Material.Filled.EventBusy" Size="Size.Large" Color="Color.Secondary" />
+						<MudText>No meetings found.</MudText>
+					</MudStack>
 				}
 				else
 				{
@@ -148,7 +178,7 @@
 							<MudListItem T="ConversationDto" OnClick="() => NavigateToConversation(conversation.ConversationId)" Style="cursor: pointer;">
 								<MudListItemText>
 									<MudText Typo="Typo.subtitle2">@conversation.Title</MudText>
-									<MudText Typo="Typo.caption" Color="Color.Secondary">@conversation.MeetingDate.ToString("dd-MM-yyyy HH:mm")</MudText>
+									<MudText Typo="Typo.caption" Color="Color.Default">@conversation.MeetingDate.ToString("dd-MM-yyyy HH:mm")</MudText>
 								</MudListItemText>
 								<MudChip T="string" Color="GetStatusColor(conversation.Status)" Size="Size.Small">
 									@conversation.Status.ToString()
@@ -159,7 +189,21 @@
 				}
 			</MudPaper>
 		</MudItem>
-	</MudGrid>
+			</MudGrid>
+		</Authorized>
+		<NotAuthorized>
+			<MudPaper Elevation="2" Class="pa-8 d-flex flex-column align-center justify-center">
+				<MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" Color="Color.Primary" Class="mb-3" />
+				<MudText Typo="Typo.h5" Class="mb-2">Welcome to ActivityAssistent</MudText>
+				<MudText Typo="Typo.body1" Color="Color.Default" Align="Align.Center" Class="mb-4">
+					Sign in to view your conversations, action points, and AI summaries.
+				</MudText>
+				<MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Login" OnClick="NavigateToLogin">
+					Go to login
+				</MudButton>
+			</MudPaper>
+		</NotAuthorized>
+	</AuthorizeView>
 </MudContainer>
 
 @code {
@@ -177,7 +221,12 @@
 		.Where(x => !x.IsCompleted)
 		.OrderBy(x => x.DueDate)
 		.Take(5);
+	private string ConversationFilter { get; set; } = string.Empty;
+
 	private IEnumerable<ConversationDto> RecentConversations => Conversations
+		.Where(x => string.IsNullOrWhiteSpace(ConversationFilter)
+			|| (!string.IsNullOrWhiteSpace(x.Title)
+				&& x.Title.Contains(ConversationFilter, StringComparison.OrdinalIgnoreCase)))
 		.OrderByDescending(x => x.MeetingDate)
 		.Take(5);
 
@@ -215,8 +264,8 @@
 		}
 		catch (Exception ex)
 		{
-			Console.WriteLine($"Fout bij laden dashboard: {ex.Message}");
-			Snackbar.Add("Fout bij het laden van het dashboard.", Severity.Error);
+		Console.WriteLine($"Error loading dashboard: {ex.Message}");
+		Snackbar.Add("Failed to load the dashboard.", Severity.Error);
 		}
 		finally
 		{
@@ -232,6 +281,22 @@
 	private void NavigateToConversation(Guid conversationId)
 	{
 		NavManager.NavigateTo($"/SalesConversation/Detail/{conversationId}");
+	}
+
+	private void NavigateToLogin()
+	{
+		NavManager.NavigateTo("/login");
+	}
+
+	private void LogoutAsync()
+	{
+		AuthStateProvider.LogOut();
+		NavManager.NavigateTo("/login");
+	}
+
+	private bool IsOverdue(ActionPointDto actionPoint)
+	{
+		return !actionPoint.IsCompleted && actionPoint.DueDate.Date < DateTime.Today;
 	}
 
 	private Color GetStatusColor(ConversationStatus Status)

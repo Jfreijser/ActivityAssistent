@@ -71,6 +71,25 @@ namespace ActivityAssistent.App.Services
             }
         }
 
+        public async Task<IReadOnlyList<AiAnalysisStateRecord>> GetAnalysisStateByConversationIdAsync(Guid ConversationId, CancellationToken CancelToken)
+        {
+            try
+            {
+                var result = await GetAsync<ApiResponse<IReadOnlyList<AiAnalysisStateRecord>>>($"api/ai/AnalysisState/{ConversationId}", CancelToken);
+                if (result is { IsSuccess: true })
+                {
+                    return result.Data ?? Array.Empty<AiAnalysisStateRecord>();
+                }
+
+                return Array.Empty<AiAnalysisStateRecord>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting analysis state: {ex.Message}");
+                return Array.Empty<AiAnalysisStateRecord>();
+            }
+        }
+
         public async Task<bool> SaveAnalysisResultsAsync(MeetingAnalysisResultDto Model, CancellationToken CancelToken)
         {
             try

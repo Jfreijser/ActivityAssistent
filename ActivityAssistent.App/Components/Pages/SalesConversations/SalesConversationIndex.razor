@@ -103,7 +103,7 @@
 				</HeaderContent>
 				<RowTemplate>
 					<MudTd DataLabel="Date">@context.MeetingDate.ToString("dd-MM-yyyy HH:mm")</MudTd>
-					<MudTd DataLabel="Customer / Subject">@context.CompanyName</MudTd>
+					<MudTd DataLabel="Customer / Subject">@GetConversationSubject(context)</MudTd>
 					<MudTd DataLabel="Employee">@UserProfile?.FullName</MudTd>
 					<MudTd DataLabel="Status">
 						<MudChip T="string" Color="GetStatusColor(context.Status)" Size="Size.Small">
@@ -115,6 +115,10 @@
 									   Color="Color.Info"
 									   Size="Size.Small"
 									   OnClick="() => NavigateToDetail(context.ConversationId)" />
+						<MudIconButton Icon="@Icons.Material.Filled.Summarize"
+									   Color="Color.Primary"
+									   Size="Size.Small"
+									   OnClick="() => NavigateToSummary(context.ConversationId)" />
 						<MudIconButton Icon="@Icons.Material.Filled.Delete"
 									   Color="Color.Error"
 									   Size="Size.Small" />
@@ -222,6 +226,31 @@
 	private void NavigateToDetail(Guid ConversationId)
 	{
 		NavigationManager.NavigateTo($"/SalesConversation/Detail/{ConversationId}");
+	}
+
+	private void NavigateToSummary(Guid ConversationId)
+	{
+		NavigationManager.NavigateTo($"/SalesConversation/Summary/{ConversationId}");
+	}
+
+	private string GetConversationSubject(ConversationDto conversation)
+	{
+		if (!string.IsNullOrWhiteSpace(conversation.CompanyName) && !string.IsNullOrWhiteSpace(conversation.Title))
+		{
+			return $"{conversation.CompanyName} - {conversation.Title}";
+		}
+
+		if (!string.IsNullOrWhiteSpace(conversation.CompanyName))
+		{
+			return conversation.CompanyName;
+		}
+
+		if (!string.IsNullOrWhiteSpace(conversation.Title))
+		{
+			return conversation.Title;
+		}
+
+		return "Unknown";
 	}
 
 	private void ResetFilters()

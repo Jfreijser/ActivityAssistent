@@ -12,6 +12,8 @@ namespace ActivityAssistent.App.Interfaces.Ai
         
         Task<AiStatusDto> GetAiStatusAsync(Guid Token, CancellationToken CancelToken);
 
+        Task<IReadOnlyList<AiAnalysisStateRecord>> GetAnalysisStateByConversationIdAsync(Guid ConversationId, CancellationToken CancelToken);
+
         // 3. Noodrem: Stop een lopende analyse.
         Task<bool> CancelAiAnalysisAsync(Guid Token);
 

@@ -1,24 +1,150 @@
 @page "/SalesConversation/Summary/{ConversationId:guid}"
+@using ActivityAssistent.Shared.Dtos.Ai
 @using MudBlazor
+@inject ActivityAssistent.App.Interfaces.Ai.IAiMeetingAnalyzer AiMeetingAnalyzer
+@inject ActivityAssistent.App.Interfaces.Conversations.IConversationService ConversationService
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-6">
-	<MudText Typo="Typo.h4" Color="Color.Primary">Samenvatting</MudText>
-	<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-		Overzicht van de AI-samenvatting van het gesprek.
+	<MudText Typo="Typo.h4" Color="Color.Primary">Summary</MudText>
+	<MudText Typo="Typo.body2" Color="Color.Default" Class="mb-4">
+		Overview of the AI summary for this conversation.
 	</MudText>
 
-	<MudPaper Elevation="2" Class="pa-4">
-		<MudText Typo="Typo.subtitle1">Samenvatting</MudText>
-		<MudText Typo="Typo.body2" Color="Color.Secondary">
-			Hier komt de gegenereerde samenvatting te staan.
-		</MudText>
-		<MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="mt-4">
-			Verstuur samenvatting naar klant
-		</MudButton>
-	</MudPaper>
+	@if (IsLoading)
+	{
+		<MudPaper Elevation="2" Class="pa-6 d-flex align-center justify-center">
+			<MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+		</MudPaper>
+	}
+	else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+	{
+		<MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="my-4">
+			@ErrorMessage
+		</MudAlert>
+	}
+	else if (AnalysisStates.Count == 0)
+	{
+		<MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="my-4">
+			No recordings or AI summaries are available yet.
+		</MudAlert>
+	}
+	else
+	{
+		<MudStack Spacing="3">
+			@foreach (var item in AnalysisStates)
+			{
+				<MudPaper Elevation="2" Class="pa-4">
+				<MudText Typo="Typo.subtitle2" Color="Color.Default" Class="mb-2">
+						@ConversationTitle
+					</MudText>
+					<MudText Typo="Typo.subtitle1">AI Summary</MudText>
+				<MudText Typo="Typo.body2" Color="Color.Default" Class="mb-4">
+						@if (string.IsNullOrWhiteSpace(item.AiSummary))
+						{
+							<span>No AI summary available.</span>
+						}
+						else
+						{
+							@item.AiSummary
+						}
+					</MudText>
+
+					<MudDivider Class="my-3" />
+
+					<MudText Typo="Typo.subtitle1">Recording</MudText>
+				<MudText Typo="Typo.body2" Color="Color.Default" Class="mb-2">
+						@if (string.IsNullOrWhiteSpace(item.FilePath))
+						{
+							<span>No recording available.</span>
+						}
+						else
+						{
+							@item.FilePath
+						}
+					</MudText>
+					@{
+						var audioDataUrl = GetAudioDataUrl(item.FilePath);
+					}
+					@if (!string.IsNullOrWhiteSpace(audioDataUrl))
+					{
+						<audio controls src="@audioDataUrl" class="mt-2 w-100"></audio>
+					}
+				</MudPaper>
+			}
+		</MudStack>
+	}
 </MudContainer>
 
 @code {
 	[Parameter]
 	public Guid ConversationId { get; set; }
+
+	private bool IsLoading { get; set; } = true;
+	private string ErrorMessage { get; set; } = string.Empty;
+	private List<AiAnalysisStateRecord> AnalysisStates { get; set; } = new();
+	private string ConversationTitle { get; set; } = "";
+	private CancellationTokenSource TokenSource { get; set; } = new();
+
+	private Dictionary<string, string> AudioDataUrls { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+	private async Task<string?> LoadAudioDataUrlAsync(string filePath)
+	{
+		if (string.IsNullOrWhiteSpace(filePath))
+		{
+			return null;
+		}
+
+		if (AudioDataUrls.TryGetValue(filePath, out var cachedUrl))
+		{
+			return cachedUrl;
+		}
+
+		if (!System.IO.File.Exists(filePath))
+		{
+			return null;
+		}
+
+		byte[] fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+		string base64String = Convert.ToBase64String(fileBytes);
+		var dataUrl = $"data:audio/wav;base64,{base64String}";
+		AudioDataUrls[filePath] = dataUrl;
+		return dataUrl;
+	}
+
+	private string? GetAudioDataUrl(string filePath)
+	{
+		if (string.IsNullOrWhiteSpace(filePath))
+		{
+			return null;
+		}
+
+		return AudioDataUrls.TryGetValue(filePath, out var dataUrl) ? dataUrl : null;
+	}
+
+	protected override async Task OnInitializedAsync()
+	{
+		try
+		{
+			IsLoading = true;
+			var conversation = await ConversationService.GetConversationAsync(ConversationId, TokenSource.Token);
+			ConversationTitle = string.IsNullOrWhiteSpace(conversation?.Title) ? "" : conversation.Title;
+			AnalysisStates = (await AiMeetingAnalyzer.GetAnalysisStateByConversationIdAsync(ConversationId, TokenSource.Token)).ToList();
+			foreach (var item in AnalysisStates)
+			{
+				if (!string.IsNullOrWhiteSpace(item.FilePath))
+				{
+					await LoadAudioDataUrlAsync(item.FilePath);
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			ErrorMessage = "Failed to load AI summaries and recordings.";
+			Console.WriteLine($"Error loading analysis state: {ex.Message}");
+		}
+		finally
+		{
+			IsLoading = false;
+		}
+	}
 }

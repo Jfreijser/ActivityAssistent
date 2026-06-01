@@ -14,6 +14,28 @@ namespace ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository
             throw new NotImplementedException();
         }
 
+        public async Task<IReadOnlyList<AiAnalysisStateRecord>> GetAnalysisStateByConversationIdAsync(Guid ConversationId, CancellationToken CancelToken)
+        {
+            var sql = "select Token, ConversationId, FilePath, Status as State, Transcription, AiSummary, IsCompleted, HasError, Created, UpdatedAt as Updated from AiAnalysisState where ConversationId = @ConversationId order by Created desc";
+            var Params = new DynamicParameters();
+            Params.Add("@ConversationId", ConversationId);
+
+            var command = new CommandDefinition(sql, Params, cancellationToken: CancelToken);
+            try
+            {
+                using (var db = connection.CreateConnection())
+                {
+                    var result = await db.QueryAsync<AiAnalysisStateRecord>(command);
+                    return result.ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching analysis state from database: {ex.Message}");
+                return Array.Empty<AiAnalysisStateRecord>();
+            }
+        }
+
         public async Task<AiStatusDto> GetStatusByTokenAsync(Guid Token, CancellationToken CancelToken)
         {
             var sql = "select Status as CurrentState, UpdatedAt from AiAnalysisState where Token = @Token";

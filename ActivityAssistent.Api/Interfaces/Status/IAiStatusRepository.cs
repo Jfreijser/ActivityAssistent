@@ -9,6 +9,7 @@ namespace ActivityAssistent.Api.Interfaces.Status
         Task<bool> SaveAnalysisResultsAsync(MeetingAnalysisResultDto Model, CancellationToken CancelToken);
 
         Task<bool> UpdateAnalysisResultsAsync(MeetingAnalysisResultDto Model, CancellationToken CancelToken);
+        Task<IReadOnlyList<AiAnalysisStateRecord>> GetAnalysisStateByConversationIdAsync(Guid ConversationId, CancellationToken CancelToken);
         Task<bool> DeleteAnalysisResultsAsync(Guid Token, CancellationToken CancelToken);
     }
 }

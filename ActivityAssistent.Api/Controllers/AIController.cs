@@ -83,6 +83,32 @@ namespace ActivityAssistent.Api.Controllers
 
         }
 
+        [HttpGet("AnalysisState/{ConversationId}")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<IReadOnlyList<AiAnalysisStateRecord>>>> GetAnalysisStateAsync([FromRoute] Guid ConversationId, CancellationToken CancelToken)
+        {
+            try
+            {
+                var result = await AiMeetingAnalyzer.GetAnalysisStateByConversationIdAsync(ConversationId, CancelToken);
+                return Ok(new ApiResponse<IReadOnlyList<AiAnalysisStateRecord>>
+                {
+                    IsSuccess = true,
+                    Data = result,
+                    ErrorMessage = ""
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while fetching analysis state: {ex}");
+                return BadRequest(new ApiResponse<IReadOnlyList<AiAnalysisStateRecord>>
+                {
+                    IsSuccess = false,
+                    Data = Array.Empty<AiAnalysisStateRecord>(),
+                    ErrorMessage = "Failed to fetch analysis state."
+                });
+            }
+        }
+
 
         [HttpPost("SaveAnalysisActionPoints")]
         [Authorize]
