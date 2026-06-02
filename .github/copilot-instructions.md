@@ -9,3 +9,21 @@
 
 ## Language Preferences
 - User wants conversation in Dutch but all UI text and errors in English.
+
+## Testing Requirements
+- Tests should use xUnit and UI/device tests target the .NET MAUI app.
+- Definition of Done includes:
+  - Acceptance criteria met
+  - Documentation completed
+  - No known defects
+  - Unit/integration/functional tests passed
+  - Design patterns applied
+  - No build failures
+  - Coding/architecture standards satisfied
+  - Code check-in
+
+## Setup Reminders
+- For running MAUI UI tests, ensure the following environment variables are set:
+  - `ANDROID_HOME`/`SDK_ROOT` is configured.
+  - `adb` is included in the `PATH`.
+  - `JAVA_HOME` is set correctly.
