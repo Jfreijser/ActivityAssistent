@@ -5,7 +5,7 @@
 - User prefers storing the SQL Server connection string in user secrets instead of appsettings.json.
 - Database name should be spelled "ActivityAssistent" (with double s).
 - User prefers integer identity primary keys (no GUIDs) and column names like Company.Name instead of CompanyName.
-- User decided to drop/remove SubNr from the database model (not needed).
+- SubNr is still part of the ActionPoints use case and should be used for filtering/grouping rather than being removed.
 
 ## Language Preferences
 - User wants conversation in Dutch but all UI text and errors in English.

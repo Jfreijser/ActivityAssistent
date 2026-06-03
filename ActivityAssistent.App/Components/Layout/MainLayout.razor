@@ -79,6 +79,10 @@
                 <MudNavMenu>
                     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
                     <MudNavLink Href="/SalesConversation/" Icon="@Icons.Material.Filled.Handshake">Sales conversations</MudNavLink>
+                    @if (IsManagerOrAdmin)
+                    {
+                        <MudNavLink Href="/management/team-tasks" Icon="@Icons.Material.Filled.SupervisorAccount">Team tasks</MudNavLink>
+                    }
                 </MudNavMenu>
             </MudDrawer>
 
@@ -122,6 +126,8 @@
         }
     };
 
+    private bool IsManagerOrAdmin => HasManagerAccess(CurrentUser?.Role);
+
     protected override async Task OnInitializedAsync()
     {
         IsDarkMode = await ThemeService.IsDarkModeAsync();
@@ -157,22 +163,28 @@
 
         if (User.Identity is { IsAuthenticated: true })
         {
-            var RawUserId = User.FindFirst("nameid")?.Value;
+            var RawUserId = User.FindFirst("nameid")?.Value
+                ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             Guid.TryParse(RawUserId, out var ParsedGuid);
 
-            var RawSubNrId = User.FindFirst(System.Security.Claims.ClaimTypes.GroupSid)?.Value;
+            var RawSubNrId = User.FindFirst(System.Security.Claims.ClaimTypes.GroupSid)?.Value
+                ?? User.FindFirst("groupsid")?.Value;
             Guid? ParsedSubNrId = Guid.TryParse(RawSubNrId, out var ValidSubNrGuid) ? ValidSubNrGuid : null;
 
-            var UserRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? string.Empty;
+            var UserRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
+                ?? User.FindFirst("role")?.Value
+                ?? string.Empty;
             
             CurrentUser = new UserProfileDto
             {
                 UserId = ParsedGuid,
-                FullName = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
-                            ?? User.FindFirst("unique_name")?.Value
-                            ?? User.Identity.Name
+                FullName = User.FindFirst("unique_name")?.Value
+                            ?? User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
+                            ?? User.Identity?.Name
                             ?? "Sales Professional",
-                Email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? string.Empty,
+                Email = User.FindFirst("email")?.Value
+                        ?? User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+                        ?? string.Empty,
                 SubNrId = ParsedSubNrId,
                 Role = UserRole
             };
@@ -192,6 +204,12 @@
     private void HandleAuthenticationStateChanged(Task<AuthenticationState> Task) 
     {
         InvokeAsync(LoadUserState);
+    }
+
+    private static bool HasManagerAccess(string? role)
+    {
+        return string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(role, "Manager", StringComparison.OrdinalIgnoreCase);
     }
 
     private void HandleLogout()

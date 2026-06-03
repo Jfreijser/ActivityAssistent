@@ -4,6 +4,7 @@ using ActivityAssistent.App.Interfaces.Ai;
 using ActivityAssistent.App.Interfaces.Audio;
 using ActivityAssistent.App.Interfaces.companies;
 using ActivityAssistent.App.Interfaces.Conversations;
+using ActivityAssistent.App.Interfaces.Email;
 using ActivityAssistent.App.Interfaces.Identity;
 using ActivityAssistent.App.Services;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -51,6 +52,7 @@ namespace ActivityAssistent.App
             builder.Services.AddHttpClient<IAudioRecorderService, MauiAudioService>(ConfigureBackendClient);
             builder.Services.AddHttpClient<IAiMeetingAnalyzer, MauiAiService>(ConfigureBackendClient);
             builder.Services.AddScoped<IThemeService, ThemeService>();
+            builder.Services.AddScoped<IEmailService, MauiEmailService>();
             return builder.Build();
         }
     }

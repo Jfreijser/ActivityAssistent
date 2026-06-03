@@ -1,8 +1,21 @@
 {
-  "profiles": {
-    "Windows Machine": {
-      "commandName": "Project",
-      "nativeDebugging": false
+    "profiles": {
+        "Windows Machine": {
+            "commandName": "Project",
+            "nativeDebugging": false
+        },
+        "http": {
+            "commandName": "Project",
+            "dotnetRunMessages": true,
+            "launchBrowser": true,
+            "applicationUrl": "http://localhost:5000",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "AA_SMTP_HOST": "smtp-mail.outlook.com",
+                "AA_SMTP_PORT": "587",
+                "AA_SMTP_USER": "info@ActivityAssistent.com",
+                "AA_SMTP_SENDER": "info@ActivityAssistent.com"
+            }
+        }
     }
-  }
 }

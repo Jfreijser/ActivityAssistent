@@ -1,0 +1,155 @@
+@page "/management/team-tasks"
+@attribute [Authorize(Roles = "Admin,Manager")]
+@using MudBlazor
+@using Microsoft.AspNetCore.Authorization
+@using ActivityAssistent.Shared.Dtos.ActionPoints
+@using ActivityAssistent.Shared.Dtos.Identity
+@using ActivityAssistent.App.Interfaces.ActionPoint
+@inject IActionPointService ActionPointService
+@inject ISnackbar Snackbar
+@implements IDisposable
+
+<PageTitle>Team tasks - ActivityAssistent</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
+	<AuthorizeView Roles="Admin,Manager">
+		<Authorized Context="authState">
+			<MudGrid Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+				<MudItem>
+					<MudText Typo="Typo.h4" Color="Color.Primary">Team tasks</MudText>
+					<MudText Typo="Typo.body2" Color="Color.Secondary">
+						Open tasks grouped by team member.
+					</MudText>
+				</MudItem>
+			</MudGrid>
+
+			@if (IsLoading)
+			{
+				<MudPaper Elevation="2" Class="pa-6 d-flex align-center">
+					<MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Medium" />
+					<MudText Class="ms-3">Loading team tasks...</MudText>
+				</MudPaper>
+			}
+			else if (IsError)
+			{
+				<MudAlert Severity="Severity.Error" Variant="Variant.Filled">
+					Failed to load team tasks. Please try again.
+				</MudAlert>
+			}
+			else if (!UserGroups.Any())
+			{
+				<MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+					No team members found for this SubNr.
+				</MudAlert>
+			}
+			else
+			{
+				<MudTabs Rounded="true" Border="true" Class="mt-2">
+					@foreach (var group in UserGroups)
+					{
+						<MudTabPanel Text="@($"{group.User.FullName} ({group.ActionPoints.Count})")">
+							@if (!group.ActionPoints.Any())
+							{
+								<MudText Class="pa-4">No open tasks for this user.</MudText>
+							}
+							else
+							{
+								<MudTable Items="group.ActionPoints" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+									<HeaderContent>
+										<MudTh>Description</MudTh>
+										<MudTh>Due date</MudTh>
+										<MudTh>Status</MudTh>
+									</HeaderContent>
+									<RowTemplate Context="actionPoint">
+										<MudTd DataLabel="Description">@actionPoint.Description</MudTd>
+										<MudTd DataLabel="Due date">@actionPoint.DueDate.ToString("dd-MM-yyyy")</MudTd>
+										<MudTd DataLabel="Status">
+											<MudChip T="string" Color="@(actionPoint.IsCompleted ? Color.Success : Color.Warning)" Size="Size.Small">
+												@(actionPoint.IsCompleted ? "Completed" : "Open")
+											</MudChip>
+										</MudTd>
+									</RowTemplate>
+								</MudTable>
+							}
+						</MudTabPanel>
+					}
+				</MudTabs>
+			}
+		</Authorized>
+		<NotAuthorized>
+			<MudAlert Severity="Severity.Warning" Variant="Variant.Filled">
+				You do not have access to this page.
+			</MudAlert>
+		</NotAuthorized>
+	</AuthorizeView>
+</MudContainer>
+
+@code {
+	[CascadingParameter]
+	public UserProfileDto? CurrentUser { get; set; }
+
+	private bool IsLoading;
+	private bool IsError;
+	private List<UserActionPointGroup> UserGroups = new();
+	private CancellationTokenSource TokenSource { get; set; } = new();
+
+	protected override async Task OnInitializedAsync()
+	{
+		await LoadDataAsync();
+	}
+
+	private async Task LoadDataAsync()
+	{
+		IsLoading = true;
+		IsError = false;
+
+		try
+		{
+			var users = await ActionPointService.GetDelegationUsersAsync(TokenSource.Token);
+
+			if (CurrentUser?.UserId != null && !users.Any(x => x.UserId == CurrentUser.UserId))
+			{
+				users.Insert(0, CurrentUser);
+			}
+
+			UserGroups.Clear();
+
+			foreach (var user in users)
+			{
+				if (user.UserId is null || user.UserId == Guid.Empty)
+				{
+					continue;
+				}
+
+				var actionPoints = await ActionPointService.GetActiveActionPointsAsync(user.UserId.Value.ToString(), TokenSource.Token);
+
+				UserGroups.Add(new UserActionPointGroup
+				{
+					User = user,
+					ActionPoints = actionPoints ?? new List<ActionPointDto>()
+				});
+			}
+		}
+		catch (Exception)
+		{
+			IsError = true;
+			Snackbar.Add("Failed to load team tasks.", Severity.Error);
+		}
+		finally
+		{
+			IsLoading = false;
+		}
+	}
+
+	public void Dispose()
+	{
+		TokenSource.Cancel();
+		TokenSource.Dispose();
+	}
+
+	private sealed class UserActionPointGroup
+	{
+		public UserProfileDto User { get; set; } = new();
+		public List<ActionPointDto> ActionPoints { get; set; } = new();
+	}
+}

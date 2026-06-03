@@ -2,8 +2,11 @@
 @using ActivityAssistent.Shared.Dtos.Ai
 @using MudBlazor
 @using Microsoft.Maui.Media
+@using ActivityAssistent.App.Interfaces.Email
 @inject ActivityAssistent.App.Interfaces.Ai.IAiMeetingAnalyzer AiMeetingAnalyzer
 @inject ActivityAssistent.App.Interfaces.Conversations.IConversationService ConversationService
+@inject IEmailService EmailService
+@inject IDialogService DialogService
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-6">
 	<MudText Typo="Typo.h4" Color="Color.Primary">Summary</MudText>
@@ -52,6 +55,15 @@
 					<MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="string.IsNullOrWhiteSpace(item.AiSummary)" OnClick="() => SpeakSummaryAsync(item.AiSummary)">
 						Play summary
 					</MudButton>
+					<MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="ml-2" Disabled="string.IsNullOrWhiteSpace(item.AiSummary)" OnClick="() => OpenEmailDialogAsync(item)">
+						Email summary
+					</MudButton>
+					@if (SummaryErrorMessages.TryGetValue(item.Token, out var summaryError))
+					{
+						<MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Class="mt-3">
+							@summaryError
+						</MudAlert>
+					}
 
 					<MudDivider Class="my-3" />
 
@@ -88,6 +100,7 @@
 	private List<AiAnalysisStateRecord> AnalysisStates { get; set; } = new();
 	private string ConversationTitle { get; set; } = "";
 	private CancellationTokenSource TokenSource { get; set; } = new();
+	private readonly Dictionary<Guid, string> SummaryErrorMessages = new();
 
 	private Dictionary<string, string> AudioDataUrls { get; } = new(StringComparer.OrdinalIgnoreCase);
 
@@ -133,6 +146,42 @@
 		}
 
 		await TextToSpeech.Default.SpeakAsync(summary);
+	}
+
+	private async Task OpenEmailDialogAsync(AiAnalysisStateRecord item)
+	{
+		if (string.IsNullOrWhiteSpace(item.AiSummary))
+		{
+			return;
+		}
+
+		var parameters = new DialogParameters
+		{
+			["Model"] = new EmailSummaryDialog.EmailSummaryDialogModel
+			{
+				Subject = string.IsNullOrWhiteSpace(ConversationTitle)
+					? "AI summary"
+					: $"AI summary - {ConversationTitle}"
+			}
+		};
+
+		var dialog = await DialogService.ShowAsync<EmailSummaryDialog>("Send AI summary", parameters);
+		var result = await dialog.Result;
+		if (result.Canceled || result.Data is not EmailSummaryDialog.EmailSummaryDialogModel model)
+		{
+			return;
+		}
+
+		try
+		{
+			SummaryErrorMessages.Remove(item.Token);
+			await EmailService.SendSummaryAsync(model.RecipientEmail, model.Subject, item.AiSummary);
+		}
+		catch (Exception ex)
+		{
+			SummaryErrorMessages[item.Token] = "Failed to send AI summary email.";
+			Console.WriteLine($"Error sending summary email: {ex.Message}");
+		}
 	}
 
 	protected override async Task OnInitializedAsync()
