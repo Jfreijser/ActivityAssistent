@@ -101,8 +101,8 @@
 	private List<UserProfileDto> DelegationUsers = new();
 	private CancellationTokenSource TokenSource { get; set; } = new();
 
-	private string FormTitle => IsEditMode ? "Actiepunt bewerken" : "Nieuw actiepunt";
-	private string FormButtonText => IsEditMode ? "Opslaan" : "Actiepunt toevoegen";
+	private string FormTitle => IsEditMode ? "Edit actionpoint" : "Add actionpoint";
+	private string FormButtonText => IsEditMode ? "save" : "Add actionpoint";
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -124,7 +124,7 @@
 		catch (Exception ex)
 		{
 			Console.WriteLine($"Fout bij laden medewerkers: {ex.Message}");
-			Snackbar.Add("Fout bij het laden van medewerkers.", Severity.Error);
+			Snackbar.Add("error while loading co-workers", Severity.Error);
 		}
 	}
 
@@ -139,7 +139,7 @@
 		catch (Exception ex)
 		{
 			Console.WriteLine($"Fout bij laden actiepunten: {ex.Message}");
-			Snackbar.Add("Fout bij het laden van de actiepunten.", Severity.Error);
+			Snackbar.Add("Error while loading actionpoints", Severity.Error);
 		}
 		finally
 		{
@@ -182,7 +182,7 @@
 		};
 
 		var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-		var title = existingActionPoint == null ? "Nieuw actiepunt" : "Actiepunt bewerken";
+		var title = existingActionPoint == null ? "New Action Point" : "Edit Action Point";
 		var dialog = await DialogService.ShowAsync<global::ActivityAssistent.App.Components.Pages.SalesConversations.ActionPointDialog>(title, parameters, options);
 		var result = await dialog.Result;
 
@@ -223,7 +223,7 @@
 				{
 					ActionPointItems[index] = updated;
 				}
-				Snackbar.Add("Actiepunt bijgewerkt.", Severity.Success);
+				Snackbar.Add("Action Point updated.", Severity.Success);
 			}
 			else
 			{
@@ -241,14 +241,14 @@
 				if (created.ActionPointId != Guid.Empty)
 				{
 					ActionPointItems.Add(created);
-					Snackbar.Add("Actiepunt toegevoegd.", Severity.Success);
+					Snackbar.Add("Action Point added.", Severity.Success);
 				}
 			}
 		}
 		catch (Exception ex)
 		{
-			Console.WriteLine($"Fout bij opslaan actiepunt: {ex.Message}");
-			Snackbar.Add("Fout bij het opslaan van het actiepunt.", Severity.Error);
+			Console.WriteLine($"Error while saving action point: {ex.Message}");
+			Snackbar.Add("Error while saving action point.", Severity.Error);
 		}
 	}
 
@@ -278,8 +278,8 @@
 		}
 		catch (Exception ex)
 		{
-			Console.WriteLine($"Fout bij updaten status: {ex.Message}");
-			Snackbar.Add("Fout bij het updaten van de status.", Severity.Error);
+			Console.WriteLine($"Error while updating status: {ex.Message}");
+			Snackbar.Add("Error while updating status.", Severity.Error);
 		}
 	}
 
@@ -291,17 +291,17 @@
 			if (result)
 			{
 				ActionPointItems.Remove(actionPoint);
-				Snackbar.Add("Actiepunt verwijderd.", Severity.Success);
+				Snackbar.Add("Action Point deleted.", Severity.Success);
 			}
 			else
 			{
-				Snackbar.Add("Actiepunt kon niet worden verwijderd.", Severity.Warning);
+				Snackbar.Add("Action Point could not be deleted.", Severity.Warning);
 			}
 		}
 		catch (Exception ex)
 		{
-			Console.WriteLine($"Fout bij verwijderen: {ex.Message}");
-			Snackbar.Add("Fout bij het verwijderen van het actiepunt.", Severity.Error);
+			Console.WriteLine($"Error while deleting action point: {ex.Message}");
+			Snackbar.Add("Error while deleting action point.", Severity.Error);
 		}
 	}
 
