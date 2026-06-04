@@ -18,6 +18,9 @@ mono_crash.*
 
 # Build results
 [Dd]ebug/
+# Allow MAUI debug pages under Components/Pages/Debug
+!ActivityAssistent.App/Components/Pages/Debug/
+!ActivityAssistent.App/Components/Pages/Debug/**
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
