@@ -5,12 +5,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <UserSecretsId>771e72d4-fe3c-40f4-8e3b-624d5dc48152</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="bunit" Version="2.7.2" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="FlaUI.UIA3" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="MudBlazor" Version="9.5.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
