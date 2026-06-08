@@ -13,9 +13,10 @@ namespace ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository
             var sql = @"insert into Conversations (Title, CompanyId, MeetingDate , [Status], SalesUserId ) 
                         OUTPUT INSERTED.ConversationId
                         values (@Title, @CompanyId, @MeetingDate, @Status, @SalesUserId )";
+            var command = new CommandDefinition(sql, Conversation, cancellationToken: Token);
             using (var db = connection.CreateConnection())
             {
-                return await db.QuerySingleAsync<Guid>(sql, Conversation);
+                return await db.QuerySingleAsync<Guid>(command);
             }
         }
 
@@ -26,10 +27,13 @@ namespace ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository
 
         public async Task<IEnumerable<ConversationDto>> GetAllAsync(Guid OwnerUserId, CancellationToken Token)
         {
-            var sql = "select * from Conversations where SalesUserId = @SalesUserId";
+            var sql = @"select Convo.*, Comp.Name as CompanyName from Conversations as Convo
+                        left join Companies as Comp on Comp.CompanyId = Convo.CompanyId
+                        where SalesUserId = @SalesUserId";
+            var command = new CommandDefinition(sql, new { SalesUserId = OwnerUserId }, cancellationToken: Token);
             using (var db = connection.CreateConnection())
             {
-                var result = await db.QueryAsync<ConversationDto>(sql, new { SalesUserId = OwnerUserId });
+                var result = await db.QueryAsync<ConversationDto>(command);
                 return result.ToList();
             }
              
@@ -45,10 +49,11 @@ namespace ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository
             var sql = @"select con.*, Com.Name as CompanyName from Conversations as Con
                         left Join Companies As Com on Com.CompanyId = Con.CompanyId
                         where ConversationId = @ConversationId";
+            var command = new CommandDefinition(sql, new { ConversationId }, cancellationToken: Token);
 
             using (var db = connection.CreateConnection())
             {
-                return await db.QueryFirstOrDefaultAsync<ConversationDto>(sql, new { ConversationId });
+                return await db.QueryFirstOrDefaultAsync<ConversationDto>(command);
             }
         }
 

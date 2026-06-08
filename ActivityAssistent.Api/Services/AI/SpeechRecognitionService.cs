@@ -15,7 +15,7 @@ namespace ActivityAssistent.Api.Services.AI
        
         public async Task<string> TranscribeAudioAsync(byte[] AudioData, Guid AudioToken, CancellationToken CancelToken)
         {
-            await AiStatusRepository.UpdateStatusAsync(AudioToken, AiStatus.UploadingToSpeechService);
+            await AiStatusRepository.UpdateStatusAsync(AudioToken, AiStatus.UploadingToSpeechService, CancelToken);
             
             string AiStudioKey = Environment.GetEnvironmentVariable("AISTUDIO_KEY");
             string AiStudioEndpoint = Environment.GetEnvironmentVariable("AISTUDIO_ENDPOINT"); // Bijv: https://jouw-resource.openai.azure.com/
@@ -44,7 +44,7 @@ namespace ActivityAssistent.Api.Services.AI
 
             try
             {
-                await AiStatusRepository.UpdateStatusAsync(AudioToken, AiStatus.TranscribingAudio);
+                await AiStatusRepository.UpdateStatusAsync(AudioToken, AiStatus.TranscribingAudio, CancelToken);
 
                 var Response = await Http.SendAsync(RequestMessage, CancelToken);
 
@@ -52,25 +52,25 @@ namespace ActivityAssistent.Api.Services.AI
                 {
                     string FinalTranscript = await Response.Content.ReadAsStringAsync(CancelToken);
 
-                    await AiStatusRepository.UpdateStatusAsync(AudioToken, AiStatus.TranscriptionCompleted);
+                    await AiStatusRepository.UpdateStatusAsync(AudioToken, AiStatus.TranscriptionCompleted, CancelToken);
                     return FinalTranscript.Trim();
                 }
                 else
                 {
                     
                     string ErrorContent = await Response.Content.ReadAsStringAsync(CancelToken);
-                    await AiStatusRepository.UpdateStatusAsync(AudioToken, AiStatus.ErrorTranscription);
+                    await AiStatusRepository.UpdateStatusAsync(AudioToken, AiStatus.ErrorTranscription, CancelToken);
                     return $"API Fout ({Response.StatusCode}): {ErrorContent}";
                 }
             }
             catch (OperationCanceledException)
             {
-                await AiStatusRepository.UpdateStatusAsync(AudioToken, AiStatus.ErrorTranscription);
+                await AiStatusRepository.UpdateStatusAsync(AudioToken, AiStatus.ErrorTranscription, CancelToken);
                 return "Transcriberen is geannuleerd door de gebruiker (of door de 100-seconden timeout).";
             }
             catch (Exception Ex)
             {
-                await AiStatusRepository.UpdateStatusAsync(AudioToken, AiStatus.ErrorTranscription);
+                await AiStatusRepository.UpdateStatusAsync(AudioToken, AiStatus.ErrorTranscription, CancelToken);
                 return $"Systeemfout: {Ex.Message}";
             }
         }

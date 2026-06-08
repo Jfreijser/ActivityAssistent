@@ -120,7 +120,7 @@ namespace ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository
             }
         }
 
-        public async Task<bool> UpdateStatusAsync(Guid Token, AiStatus NewStatus)
+        public async Task<bool> UpdateStatusAsync(Guid Token, AiStatus NewStatus, CancellationToken CancelToken)
         {
             var sql = "UPDATE AiAnalysisState SET Status = @NewStatus, UpdatedAt = @UpdatedAt WHERE Token = @Token";
             var Params = new DynamicParameters();
@@ -128,7 +128,7 @@ namespace ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository
             Params.Add("@UpdatedAt", DateTime.Now);
             Params.Add("@Token", Token);
 
-            var command = new CommandDefinition(sql, Params);
+            var command = new CommandDefinition(sql, Params, cancellationToken: CancelToken);
             try
             {
                 using (var db = connection.CreateConnection())

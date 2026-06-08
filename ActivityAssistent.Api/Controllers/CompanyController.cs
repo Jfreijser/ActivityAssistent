@@ -15,85 +15,24 @@ namespace ActivityAssistent.Api.Controllers
         [HttpPost("create")]
         public async Task<ActionResult<ApiResponse<bool>>> CreateCompanyAsync(CreateCompanyDto Company, CancellationToken Token)
         {
-            try
-            {
-                var result = await companyService.CreateCompanyAsync(Company, Token);
-                if (result)
-                {
-                    var SuccessResult = new ApiResponse<bool>
-                    {
-                        IsSuccess = true,
-                        Data = result,
-                        ErrorMessage = string.Empty
-                    };
-                    return Ok(SuccessResult);
-
-                }
-                else
-                {
-                    var SuccessResult = new ApiResponse<bool>
-                    {
-                        IsSuccess = false,
-                        Data = result,
-                        ErrorMessage = "Something went wrong while creating the company."
-                    };
-                    return Ok(SuccessResult);
-                }
-                
-            }
-            catch (Exception ex )
-            {
-
-                Console.WriteLine($"An Error happend while creating a Company: {ex}");
-                var SuccessResult = new ApiResponse<bool>
-                {
-                    IsSuccess = false,
-                    Data = false,
-                    ErrorMessage = "Something went wrong while creating the company."
-                };
-                return BadRequest(SuccessResult);
-            }
+            var response = await companyService.CreateCompanyAsync(Company, Token);
+            return response.IsSuccess ? Ok(response) : BadRequest(response);
            
         }
         [Authorize]
-        [HttpGet("GetCustomers")]
+        [HttpGet("GetCompanyNames")]
         public async Task<ActionResult<ApiResponse<List<CompanyNames>>>> GetCustomerAsync(CancellationToken Token)
         {
-            try
-            {
-                var result = await companyService.GetCustomerNamesAsync(Token);
-                if (result.Any())
-                {
-                    var SuccessResult = new ApiResponse<List<CompanyNames>>
-                    {
-                        IsSuccess = true,
-                        Data = result,
-                        ErrorMessage = string.Empty
-                    };
-                    return Ok(SuccessResult);
-                }
-                else
-                {
-                    return Ok(new ApiResponse<List<CompanyNames>>
-                    {
-                        IsSuccess = true,
-                        Data = new List<CompanyNames>(),
-                        ErrorMessage = "No customers found."
-                    });
-                }
+            var response = await companyService.GetCompanyNamesAsync(Token);
+            return response.IsSuccess ? Ok(response) : BadRequest(response);
+        }
 
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An Error happend while fetching customers: {ex}");
-                var SuccessResult = new ApiResponse<List<CompanyNames>>
-                {
-                    IsSuccess = false,
-                    Data = new List<CompanyNames>(),
-                    ErrorMessage = "An error occurred while fetching customers."
-                };
-                return BadRequest(SuccessResult);
-            }
+        [Authorize]
+        [HttpGet("GetCompanyOverview")]
+        public async Task<ActionResult<ApiResponse<List<CompanyOverviewDto>>>> GetCompanyOverviewAsync(CancellationToken Token)
+        {
+            var response = await companyService.GetCompanyOverviewAsync(Token);
+            return response.IsSuccess ? Ok(response) : BadRequest(response);
         }
 
     }

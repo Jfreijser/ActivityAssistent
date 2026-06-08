@@ -1,4 +1,4 @@
-namespace ActivityAssistent.App.Components.Pages.SalesConversations
+namespace ActivityAssistent.Shared.Dtos.ActionPoints
 {
     public class TeamActionPointDialogResult
     {

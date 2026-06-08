@@ -46,27 +46,41 @@ namespace ActivityAssistent.App.Services
             throw new NotImplementedException();
         }
 
-        public async Task<List<CompanyNames>> GetCustomerAsync(CancellationToken Token)
+        public async Task<List<CompanyNames>> GetCompanyNamesAsync(CancellationToken Token)
         {
             try
             {
-                var Result = await GetAsync<ApiResponse<List<CompanyNames>>>("api/Company/GetCustomers", Token);
-                switch (Result)
-                {
-                    case null:
-                        throw new HttpRequestException("The API response was empty or invalid.");
-                    case { IsSuccess: true, Data: not null }:
-                        return Result.Data!;
-                    default:
-                        Console.WriteLine($"Backend error: {Result.ErrorMessage}");
-                        return new List<CompanyNames>();
+                var Result = await GetAsync<ApiResponse<List<CompanyNames>>>("api/Company/GetCompanyNames", Token);
+                if (Result.IsSuccess)
+                { 
+                    return Result.Data;
+
                 }
-
+                else
+                { 
+                   Console.WriteLine($"Error fetching company names: {Result.ErrorMessage}");
+                    return new List<CompanyNames>();
+                }
+                
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
+                Console.WriteLine($"Exception occurred while fetching company names: {ex.Message}");
                 return new List<CompanyNames>();
+            }
+        }
+
+        public async Task<List<CompanyOverviewDto>> GetCompanyOverviewAsync(CancellationToken Token)
+        {
+            var result = await GetAsync<ApiResponse<List<CompanyOverviewDto>>>("api/Company/GetCompanyOverview", Token);
+            if (result.IsSuccess)
+            {
+                return result.Data;
+            }
+            else
+            {
+                Console.WriteLine($"Error fetching company overview: {result.ErrorMessage}");
+                return new List<CompanyOverviewDto>();
             }
         }
 

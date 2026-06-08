@@ -3,7 +3,6 @@
 @using ActivityAssistent.Shared.Dtos.ActionPoints
 @using ActivityAssistent.Shared.Dtos.Identity
 @using ActivityAssistent.App.Interfaces.ActionPoint
-@using ActivityAssistent.App.Components.Pages.SalesConversations
 @inject IActionPointService ActionPointService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -83,6 +82,9 @@
 @code {
 	[Parameter]
 	public Guid ConversationId { get; set; }
+
+	[SupplyParameterFromQuery]
+	public string? ReturnTo { get; set; }
 
 	[CascadingParameter]
 	public UserProfileDto? UserProfile { get; set; }
@@ -308,6 +310,12 @@
 
 	private void NavigateBack()
 	{
+		if (string.Equals(ReturnTo, "summary", StringComparison.OrdinalIgnoreCase))
+		{
+			NavManager.NavigateTo($"/SalesConversation/Summary/{ConversationId}");
+			return;
+		}
+
 		NavManager.NavigateTo($"/SalesConversation/Detail/{ConversationId}");
 	}
 

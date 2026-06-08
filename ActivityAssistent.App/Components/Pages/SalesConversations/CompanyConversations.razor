@@ -1,0 +1,196 @@
+@page "/SalesConversation/{CompanyId:guid}"
+@using MudBlazor
+@using ActivityAssistent.Shared.Dtos.Conversations
+@using ActivityAssistent.Shared.Enums
+@using ActivityAssistent.App.Interfaces.Conversations
+@inject IConversationService ConversationService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@implements IDisposable
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+	<MudGrid Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+		<MudItem>
+			<MudButton Variant="Variant.Text"
+					   Color="Color.Primary"
+					   StartIcon="@Icons.Material.Filled.ArrowBack"
+					   OnClick="NavigateBack">
+				Back to Companies
+			</MudButton>
+			<MudText Typo="Typo.h4" Color="Color.Primary">Company Conversations</MudText>
+			<MudText Typo="Typo.body2" Color="Color.Secondary">
+				@GetSubtitleText()
+			</MudText>
+		</MudItem>
+		<MudItem>
+			<MudButton Variant="Variant.Filled"
+					   Color="Color.Primary"
+					   StartIcon="@Icons.Material.Filled.AddIcCall"
+					   OnClick="NavigateToCreateConversation">
+				Create Conversation
+			</MudButton>
+		</MudItem>
+	</MudGrid>
+
+	<MudPaper Elevation="2" Class="pa-4">
+		@if (IsLoadingConversations)
+		{
+			<div class="d-flex justify-center align-center pa-12">
+				<MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+				<MudText Class="ml-4">Loading conversations...</MudText>
+			</div>
+		}
+		else if (Conversations.Count == 0)
+		{
+			<MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+				No conversations found for this customer.
+			</MudAlert>
+		}
+		else
+		{
+			<MudTable Items="Conversations"
+					  T="ConversationDto"
+					  Hover="true"
+					  Filter="new Func<ConversationDto, bool>(FilterFunc)"
+					  Elevation="0">
+				<ToolBarContent>
+					<MudSpacer />
+					<MudTextField @bind-Value="searchString"
+								  Placeholder="Search by title..."
+								  Adornment="Adornment.Start"
+								  AdornmentIcon="@Icons.Material.Filled.Search"
+								  IconSize="Size.Medium"
+								  Class="mt-0" />
+				</ToolBarContent>
+				<HeaderContent>
+					<MudTh>Date</MudTh>
+					<MudTh>Title</MudTh>
+					<MudTh>Status</MudTh>
+					<MudTh Style="text-align: right;">Actions</MudTh>
+				</HeaderContent>
+				<RowTemplate>
+					<MudTd DataLabel="Date">@context.MeetingDate.ToString("dd-MM-yyyy HH:mm")</MudTd>
+					<MudTd DataLabel="Title">@context.Title</MudTd>
+					<MudTd DataLabel="Status">
+						<MudChip T="string" Color="GetStatusColor(context.Status)" Size="Size.Small">
+							@GetStatusText(context.Status)
+						</MudChip>
+					</MudTd>
+					<MudTd DataLabel="Actions" Style="text-align: right;">
+						<MudIconButton Icon="@Icons.Material.Filled.Visibility"
+									   Color="Color.Primary"
+									   Size="Size.Small"
+									   OnClick="@(() => NavigateToDetail(context.ConversationId))" />
+					</MudTd>
+				</RowTemplate>
+				<PagerContent>
+					<MudTablePager RowsPerPageString="Rows per page:" />
+				</PagerContent>
+			</MudTable>
+		}
+	</MudPaper>
+</MudContainer>
+
+@code {
+	[Parameter]
+	public Guid CompanyId { get; set; }
+
+	private List<ConversationDto> Conversations { get; set; } = new();
+	private bool IsLoadingConversations { get; set; }
+	private string searchString = string.Empty;
+	private string CompanyName { get; set; } = string.Empty;
+	private CancellationTokenSource TokenSource { get; set; } = new();
+
+	protected override async Task OnInitializedAsync()
+	{
+		await LoadConversationsAsync();
+	}
+
+	private async Task LoadConversationsAsync()
+	{
+		IsLoadingConversations = true;
+		try
+		{
+			var allConversations = await ConversationService.GetAllAsync(TokenSource.Token);
+			Conversations = allConversations
+				.Where(c => c.CompanyId == CompanyId)
+				.OrderByDescending(c => c.MeetingDate)
+				.ToList();
+
+			CompanyName = Conversations.FirstOrDefault()?.CompanyName ?? string.Empty;
+		}
+		catch (Exception)
+		{
+			Snackbar.Add("Failed to load conversations. Please try again later.", Severity.Error);
+			Conversations = new List<ConversationDto>();
+		}
+		finally
+		{
+			IsLoadingConversations = false;
+		}
+	}
+
+	private void NavigateBack()
+	{
+		NavigationManager.NavigateTo("/SalesConversation/");
+	}
+
+	private void NavigateToDetail(Guid conversationId)
+	{
+		NavigationManager.NavigateTo($"/SalesConversation/Detail/{conversationId}");
+	}
+
+	private void NavigateToCreateConversation()
+	{
+		NavigationManager.NavigateTo($"/SalesConversation/Create?companyId={CompanyId}");
+	}
+
+	private bool FilterFunc(ConversationDto conversation)
+	{
+		if (string.IsNullOrWhiteSpace(searchString))
+			return true;
+
+		if (!string.IsNullOrWhiteSpace(conversation.Title) && conversation.Title.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+			return true;
+
+		return false;
+	}
+
+	private string GetSubtitleText()
+	{
+		var companyLabel = string.IsNullOrWhiteSpace(CompanyName) ? "Selected customer" : CompanyName;
+		return $"{companyLabel} · {Conversations.Count} conversation(s)";
+	}
+
+	private Color GetStatusColor(ConversationStatus status)
+	{
+		return status switch
+		{
+			ConversationStatus.Scheduled => Color.Info,
+			ConversationStatus.Recording => Color.Secondary,
+			ConversationStatus.Processing => Color.Warning,
+			ConversationStatus.Completed => Color.Success,
+			ConversationStatus.Failed => Color.Error,
+			_ => Color.Default
+		};
+	}
+
+	private string GetStatusText(ConversationStatus status)
+	{
+		return status switch
+		{
+			ConversationStatus.Scheduled => "Scheduled",
+			ConversationStatus.Recording => "Recording",
+			ConversationStatus.Processing => "Processing...",
+			ConversationStatus.Completed => "Completed",
+			ConversationStatus.Failed => "Failed",
+			_ => "Unknown"
+		};
+	}
+
+	public void Dispose()
+	{
+		TokenSource.Cancel();
+		TokenSource.Dispose();
+	}
+}

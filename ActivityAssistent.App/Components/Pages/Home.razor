@@ -31,9 +31,7 @@
 			<MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Handshake" OnClick="NavigateToConversations">
 				View conversations
 			</MudButton>
-			<MudButton Variant="Variant.Outlined" Color="Color.Error" StartIcon="@Icons.Material.Filled.Logout" OnClick="LogoutAsync" Class="ms-2">
-				Log out
-			</MudButton>
+					
 				</MudItem>
 			</MudGrid>
 
@@ -277,6 +275,11 @@
 	{
 		NavManager.NavigateTo("/SalesConversation/");
 	}
+
+	// private void NavigateToSummaries()
+	// {
+	// 	NavManager.NavigateTo("/SalesConversation/Summaries");
+	// }
 
 	private void NavigateToConversation(Guid conversationId)
 	{

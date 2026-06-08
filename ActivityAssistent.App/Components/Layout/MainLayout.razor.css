@@ -4,6 +4,14 @@
     flex-direction: column;
 }
 
+.user-actions {
+    white-space: nowrap;
+}
+
+.logout-button {
+    min-width: 0;
+}
+
 main {
     flex: 1;
 }

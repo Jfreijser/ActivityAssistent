@@ -9,6 +9,7 @@
 @inject NavigationManager NavigationManager
 @inject ActivityAssistent.App.Interfaces.Ai.IAiMeetingAnalyzer AiMeetingAnalyzer
 @inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-6">
@@ -81,7 +82,7 @@
                 }
             </MudCardContent>
             <MudCardActions>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="me-2" OnClick="SaveResults">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="me-2" OnClick="SaveResults" Disabled="IsSavingResults">
                     Save & confirm
                 </MudButton>
                 <MudButton Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.ArrowBack" OnClick="GoBack">
@@ -103,6 +104,7 @@
 	private AiStatusDto? CurrentAiStatus;
 	private MeetingAnalysisResultDto AnalysisResult;
     private CancellationTokenSource TokenSource { get; set; } = new();
+    private bool IsSavingResults;
 
 
 
@@ -191,10 +193,37 @@
 
 	private async Task SaveResults()
 	{
-		AnalysisResult.Token = Token;
-		AnalysisResult.ConversationId = ConversationId;
-		var result = await AiMeetingAnalyzer.SaveAnalysisResultsAsync(AnalysisResult, TokenSource.Token);
-        Console.WriteLine("Saved!");
+        if (AnalysisResult == null)
+        {
+            Snackbar.Add("No analysis result available to save.", Severity.Warning);
+            return;
+        }
+
+        IsSavingResults = true;
+        try
+        {
+            AnalysisResult.Token = Token;
+            AnalysisResult.ConversationId = ConversationId;
+
+            var result = await AiMeetingAnalyzer.SaveAnalysisResultsAsync(AnalysisResult, TokenSource.Token);
+            if (result)
+            {
+                Snackbar.Add("Analysis saved successfully.", Severity.Success);
+                NavigationManager.NavigateTo($"/SalesConversation/Summary/{ConversationId}");
+                return;
+            }
+
+            Snackbar.Add("Saving analysis failed.", Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving analysis: {ex.Message}");
+            Snackbar.Add("Unexpected error while saving analysis.", Severity.Error);
+        }
+        finally
+        {
+            IsSavingResults = false;
+        }
     }
 
     private void GoBack()

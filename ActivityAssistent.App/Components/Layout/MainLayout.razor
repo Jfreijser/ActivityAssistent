@@ -26,38 +26,40 @@
 
                 <AuthorizeView>
                     <Authorized>
-                        <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="mx-2">
-                            <ActivatorContent Context="MenuActivatorContext">
-                                <MudButton Variant="Variant.Text" Color="Color.Inherit" Class="pa-0">
-                                    <MudBadge Overlap="true" Color="Color.Success" Dot="true" Bordered="true">
-                                        <MudAvatar Color="Color.Primary" Variant="Variant.Filled" Size="Size.Medium">
-                                            @GetUserInitial(CurrentUser.FullName)
-                                        </MudAvatar>
-                                    </MudBadge>
-                                </MudButton>
-                            </ActivatorContent>
-                            <ChildContent>
-                                <div class="px-4 py-3">
-                                    <MudText Typo="Typo.body2" Class="mud-text-secondary">Ingelogd als:</MudText>
-                                    <MudText Typo="Typo.body1"><b>@CurrentUser.FullName</b></MudText>
-                                </div>
-                                <MudDivider />
+                        <div class="d-flex align-items-center gap-2 user-actions">
+                            <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="mx-2">
+                                <ActivatorContent Context="MenuActivatorContext">
+                                    <MudButton Variant="Variant.Text" Color="Color.Inherit" Class="pa-0">
+                                        <MudBadge Overlap="true" Color="Color.Success" Dot="true" Bordered="true">
+                                            <MudAvatar Color="Color.Primary" Variant="Variant.Filled" Size="Size.Medium">
+                                                @GetUserInitial(CurrentUser.FullName)
+                                            </MudAvatar>
+                                        </MudBadge>
+                                    </MudButton>
+                                </ActivatorContent>
+                                <ChildContent>
+                                    <div class="px-4 py-3">
+                                        <MudText Typo="Typo.body2" Class="mud-text-secondary">Ingelogd als:</MudText>
+                                        <MudText Typo="Typo.body1"><b>@CurrentUser.FullName</b></MudText>
+                                    </div>
+                                    <MudDivider />
 
-                                <MudMenuItem Icon="@Icons.Material.Filled.Person" Href="/profile">Mijn Profiel</MudMenuItem>
-                                <MudMenuItem Icon="@Icons.Material.Filled.Dashboard" Href="/">Dashboard</MudMenuItem>
-                                <MudMenuItem Icon="@Icons.Material.Filled.History" Href="/SalesConversation">Gesprekken</MudMenuItem>
-                                <MudMenuItem Icon="@Icons.Material.Filled.Settings" Href="/settings">Instellingen</MudMenuItem>
+                                    <MudMenuItem Icon="@Icons.Material.Filled.Person" Href="/profile">Mijn Profiel</MudMenuItem>
+                                    <MudMenuItem Icon="@Icons.Material.Filled.Dashboard" Href="/">Dashboard</MudMenuItem>
+                                    <MudMenuItem Icon="@Icons.Material.Filled.History" Href="/SalesConversation">Gesprekken</MudMenuItem>
+                                    <MudMenuItem Icon="@Icons.Material.Filled.Summarize" Href="/SalesConversation/Summaries">Summaries</MudMenuItem>
+                                    <MudMenuItem Icon="@Icons.Material.Filled.Settings" Href="/settings">Instellingen</MudMenuItem>
+                                </ChildContent>
+                            </MudMenu>
 
-                                <MudDivider />
-
-                                @* MAUI Uitloggen (Geen Formulier meer nodig) *@
-                                <MudMenuItem Icon="@Icons.Material.Filled.Logout"
-                                             IconColor="Color.Error"
-                                             OnClick="HandleLogout">
-                                    <MudText Color="Color.Error">Uitloggen</MudText>
-                                </MudMenuItem>
-                            </ChildContent>
-                        </MudMenu>
+                            <MudButton Variant="Variant.Text"
+                                       Color="Color.Error"
+                                       StartIcon="@Icons.Material.Filled.Logout"
+                                       OnClick="HandleLogout"
+                                       Class="logout-button">
+                                Uitloggen
+                            </MudButton>
+                        </div>
                     </Authorized>
                     <NotAuthorized>
                         <MudButton Variant="Variant.Text"
@@ -69,9 +71,6 @@
                     </NotAuthorized>
                 </AuthorizeView>
 
-               
-                <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Default" Edge="Edge.Start" OnClick="@ToggleDrawer" Class="mr-2" />
-
                 <MudIconButton Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" OnClick="ToggleDarkMode" Color="Color.Default" />
             </MudAppBar>
 
@@ -79,6 +78,7 @@
                 <MudNavMenu>
                     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
                     <MudNavLink Href="/SalesConversation/" Icon="@Icons.Material.Filled.Handshake">Sales conversations</MudNavLink>
+                    <MudNavLink Href="/SalesConversation/Summaries" Icon="@Icons.Material.Filled.Summarize">Summaries</MudNavLink>
                     @if (IsManagerOrAdmin)
                     {
                         <MudNavLink Href="/management/team-tasks" Icon="@Icons.Material.Filled.SupervisorAccount">Team tasks</MudNavLink>

@@ -2,74 +2,79 @@
 using ActivityAssistent.Api.Interfaces.Conversations;
 using ActivityAssistent.Api.Interfaces.Identity;
 using ActivityAssistent.Shared.Dtos.Conversations;
+using ActivityAssistent.Shared.Dtos.Response;
 using ActivityAssistent.Shared.Enums;
-using Microsoft.Crm.Sdk.Messages;
-using Microsoft.PowerPlatform.Dataverse.Client;
-using Microsoft.Xrm.Sdk;
 
 namespace ActivityAssistent.Api.Services.Conversations
 {
     public class ConversationService(IConversationRepository ConversationRepository, ICompanyRepository CompanyRepository, IUserContext UserContext) : IConversationService
     {
-        public async Task<ConversationDto> CreateConversationAsync(CreateConversationDto Conversation, CancellationToken Token)
+        public async Task<ApiResponse<ConversationDto>> CreateConversationAsync(CreateConversationDto Conversation, CancellationToken Token)
         {
-            var Company = await CompanyRepository.GetByIdAsync(Conversation.CompanyId, Token);
-            if (Company == null || Company.CompanyId == Guid.Empty)
+            try
             {
-                throw new KeyNotFoundException($"Company with ID {Conversation.CompanyId} was not found.");
-            }
+                var Company = await CompanyRepository.GetByIdAsync(Conversation.CompanyId, Token);
+                if (Company == null || Company.CompanyId == Guid.Empty)
+                {
+                    return Fail(new ConversationDto(), $"Company with ID {Conversation.CompanyId} was not found.");
+                }
 
-            // 2. Maak het gesprek aan in de database
-            Conversation.Status = ConversationStatus.Scheduled;
-            var CreatedId = await ConversationRepository.CreateAsync(Conversation, Token);
-            if (CreatedId == Guid.Empty)
+                Conversation.Status = ConversationStatus.Scheduled;
+                var CreatedId = await ConversationRepository.CreateAsync(Conversation, Token);
+                if (CreatedId == Guid.Empty)
+                {
+                    return Fail(new ConversationDto(), "Failed to create the conversation in the database.");
+                }
+
+                return await GetConversationAsync(CreatedId, Token);
+            }
+            catch (Exception ex)
             {
-                throw new InvalidOperationException("Failed to create the conversation in the database.");
+                return Fail(new ConversationDto(), ex.Message);
             }
-
-            return await GetConversationAsync(CreatedId, Token);
 
         }
 
-        public Task DeleteConversationAsync(Guid conversationId, CancellationToken Token)
+        public Task<ApiResponse<bool>> DeleteConversationAsync(Guid conversationId, CancellationToken Token)
         {
-            throw new NotImplementedException();
+            return System.Threading.Tasks.Task.FromResult(Fail(false, "Delete conversation is not implemented yet."));
         }
 
-        public async Task<IEnumerable<ConversationDto>> GetAllAsync(CancellationToken Token)
+        public async Task<ApiResponse<List<ConversationDto>>> GetAllAsync(CancellationToken Token)
         {
             try
             {
                 var result = await ConversationRepository.GetAllAsync(UserContext.CurrentUserId, Token);
-                return result;
+                return Ok(result.ToList());
             }
-            catch (Exception ex )
+            catch (Exception)
             {
-                throw new InvalidOperationException("Failed to retrieve conversations from the database.");
+                return Fail(new List<ConversationDto>(), "Failed to retrieve conversations from the database.");
             }
           
         }
 
-        public async Task<ConversationDto> GetConversationAsync(Guid ConversationId, CancellationToken Token)
+        public async Task<ApiResponse<ConversationDto>> GetConversationAsync(Guid ConversationId, CancellationToken Token)
         {
             try
             {
                 var result = await ConversationRepository.GetByIdAsync(ConversationId, Token);
-                return result;
+                return result is null
+                    ? Fail(new ConversationDto(), "Conversation not found.")
+                    : Ok(result);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
-                return new ConversationDto();
+                return Fail(new ConversationDto(), ex.Message);
             }
         }
 
-        public Task<IEnumerable<ConversationDto>> GetRecentConversationsAsync(CancellationToken Token)
+        public Task<ApiResponse<List<ConversationDto>>> GetRecentConversationsAsync(CancellationToken Token)
         {
-            throw new NotImplementedException();
+            return System.Threading.Tasks.Task.FromResult(Fail(new List<ConversationDto>(), "Get recent conversations is not implemented yet."));
         }
 
-        public async Task<ConversationDto> UpdateConversationAsync(UpdateConversationDto conversation, CancellationToken Token)
+        public async Task<ApiResponse<ConversationDto>> UpdateConversationAsync(UpdateConversationDto conversation, CancellationToken Token)
         {
             try
             {
@@ -81,21 +86,24 @@ namespace ActivityAssistent.Api.Services.Conversations
                 }
                 else
                 {
-                    throw new InvalidOperationException("Failed to update the conversation.");
+                    return Fail(new ConversationDto(), "Failed to update the conversation.");
                 }
             }
             catch (Exception ex)
             {
-
-                throw new InvalidOperationException("An error occurred while updating the conversation.", ex);
+                return Fail(new ConversationDto(), $"An error occurred while updating the conversation. {ex.Message}");
             }
         }
 
-        public Task UploadAudioAsync(Guid ConversationId, byte[] AudioData, CancellationToken Token)
+        public Task<ApiResponse<bool>> UploadAudioAsync(Guid ConversationId, byte[] AudioData, CancellationToken Token)
         {
-            throw new NotImplementedException();
+            return System.Threading.Tasks.Task.FromResult(Fail(false, "Upload audio is not implemented yet."));
         }
 
-        
+        private static ApiResponse<T> Ok<T>(T data)
+            => new() { IsSuccess = true, Data = data, ErrorMessage = string.Empty };
+
+        private static ApiResponse<T> Fail<T>(T data, string message)
+            => new() { IsSuccess = false, Data = data, ErrorMessage = message };
     }
 }

@@ -12,7 +12,7 @@ namespace ActivityAssistent.Api.Services.AI
         public async Task<MeetingAnalysisResultDto> ExtractActionPointsAsync(string TranscriptionText, CancellationToken CancelToken)
         {
 
-            await AiStatusRepository.UpdateStatusAsync(Guid.Empty, AiStatus.SendingToAiAssistant);
+            await AiStatusRepository.UpdateStatusAsync(Guid.Empty, AiStatus.SendingToAiAssistant, CancelToken);
 
             string AiStudioKey = Environment.GetEnvironmentVariable("AISTUDIO_KEY");
             string AiStudioEndpoint = Environment.GetEnvironmentVariable("AISTUDIO_ENDPOINT");

@@ -1,8 +1,15 @@
 @page "/SalesConversation/Detail/{ConversationId:guid}"
 @using MudBlazor
+@using ActivityAssistent.Shared.Dtos.ActionPoints
 @using ActivityAssistent.Shared.Dtos.Conversations
 @using ActivityAssistent.Shared.Enums
+@using ActivityAssistent.App.Interfaces.ActionPoint
+@using ActivityAssistent.App.Interfaces.Ai
+@using ActivityAssistent.Shared.Dtos.Ai
 @using ActivityAssistent.App.Interfaces.Conversations
+@using ActivityAssistent.App.Components.Shared
+@inject IActionPointService ActionPointService
+@inject ActivityAssistent.App.Interfaces.Ai.IAiMeetingAnalyzer AiMeetingAnalyzer
 @inject IConversationService ConversationService
 @inject NavigationManager NavManager
 @inject ISnackbar Snackbar
@@ -10,54 +17,63 @@
 @inject IDialogService DialogService
 
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
 	@if (IsLoading)
 	{
-		<div class="d-flex justify-center align-center" style="height: 50vh;">
+		<div class="d-flex justify-center align-center" style="height: 40vh;">
 			<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
 		</div>
 	}
 	else if (CurrentConversation == null)
 	{
 		<MudAlert Severity="Severity.Error" Class="mt-4">
-			Het gesprek kon niet worden geladen of is niet gevonden.
+			The conversation could not be loaded or was not found.
 		</MudAlert>
 		<MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="NavigateBack" Class="mt-4">
-			Terug naar overzicht
+			Back to overview
 		</MudButton>
 	}
 	else
 	{
-		<MudPaper Elevation="4" Class="pa-6" Style="border-radius: 16px;">
-
-			@* Header *@
-			<div class="d-flex align-center justify-space-between mb-6">
-				<div class="d-flex align-center">
-					<MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
-								   OnClick="NavigateBack"
-								   Class="mr-4" />
-					<MudText Typo="Typo.h4" Color="Color.Primary"><b>@CurrentConversation.Title</b></MudText>
-				</div>
-
-				@* Visuele weergave van de enum status *@
-				<MudChip T="string" Color="GetStatusColor(CurrentConversation.Status)" Size="Size.Large">
-					@CurrentConversation.Status.ToString()
-				</MudChip>
+		<MudGrid Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+			<MudItem>
+				<MudButton Variant="Variant.Text"
+						   Color="Color.Primary"
+						   StartIcon="@Icons.Material.Filled.ArrowBack"
+						   OnClick="NavigateBack">
+					Back to Company Conversations
+				</MudButton>
+			</MudItem>
+			<MudItem>
 				<MudIconButton Icon="@Icons.Material.Filled.Edit"
 							   Color="Color.Primary"
 							   OnClick="OpenEditDialog" />
+			</MudItem>
+		</MudGrid>
+
+		<MudPaper Elevation="3" Class="pa-6 mb-4" Style="border-radius: 16px;">
+			<div class="d-flex flex-column flex-sm-row justify-space-between">
+				<div>
+					<MudText Typo="Typo.h4" Color="Color.Primary">@CurrentConversation.Title</MudText>
+					<MudText Typo="Typo.body2" Color="Color.Default">
+						@CurrentConversation.CompanyName · @CurrentConversation.MeetingDate.ToString("dd-MM-yyyy HH:mm")
+					</MudText>
+				</div>
+				<MudChip T="string" Color="GetStatusColor(CurrentConversation.Status)" Size="Size.Medium" Class="mt-3 mt-sm-0">
+					@GetStatusText(CurrentConversation.Status)
+				</MudChip>
 			</div>
 
-			<MudDivider Class="mb-6" />
+			<MudDivider Class="my-4" />
 
-			<MudGrid Class="mb-6" Spacing="2">
+			<MudGrid Spacing="2">
 				<MudItem xs="12" sm="6" md="3">
 					<MudButton Variant="Variant.Filled"
 							   Color="Color.Primary"
 							   FullWidth="true"
 							   StartIcon="@Icons.Material.Filled.Mic"
 							   OnClick="NavigateToRecord">
-						Opname starten
+						Start Recording
 					</MudButton>
 				</MudItem>
 				<MudItem xs="12" sm="6" md="3">
@@ -66,7 +82,7 @@
 							   FullWidth="true"
 							   StartIcon="@Icons.Material.Filled.ListAlt"
 							   OnClick="NavigateToActionPoints">
-						Actiepunten
+						Manage Action Points
 					</MudButton>
 				</MudItem>
 				<MudItem xs="12" sm="6" md="3">
@@ -75,7 +91,7 @@
 							   FullWidth="true"
 							   StartIcon="@Icons.Material.Filled.Summarize"
 							   OnClick="NavigateToSummary">
-						Samenvatting
+						Summary
 					</MudButton>
 				</MudItem>
 				<MudItem xs="12" sm="6" md="3">
@@ -84,54 +100,168 @@
 							   FullWidth="true"
 							   StartIcon="@Icons.Material.Filled.AssignmentInd"
 							   OnClick="NavigateToTeamActionPoints">
-						Teamtaken
+						Team Action Points
 					</MudButton>
 				</MudItem>
 			</MudGrid>
-
-			@* Detail Weergave *@
-			<MudGrid Spacing="4">
-
-				@* Klant Informatie *@
-				<MudItem xs="12" md="6">
-					<MudCard Elevation="0" Class="pa-4" Style="background-color: var(--mud-palette-background-grey);">
-						<MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-1">Klant / Bedrijf</MudText>
-						<div class="d-flex align-center">
-							<MudIcon Icon="@Icons.Material.Filled.Business" Color="Color.Primary" Class="mr-2" />
-							<MudText Typo="Typo.body1"><b>@CurrentConversation.CompanyName</b></MudText>
-						</div>
-					</MudCard>
-				</MudItem>
-
-				@* Datum Informatie *@
-				<MudItem xs="12" md="6">
-					<MudCard Elevation="0" Class="pa-4" Style="background-color: var(--mud-palette-background-grey);">
-						<MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-1">Datum & Tijd</MudText>
-						<div class="d-flex align-center">
-							<MudIcon Icon="@Icons.Material.Filled.Event" Color="Color.Primary" Class="mr-2" />
-							<MudText Typo="Typo.body1"><b>@CurrentConversation.MeetingDate.ToString("dd MMMM yyyy, HH:mm")</b></MudText>
-						</div>
-					</MudCard>
-				</MudItem>
-
-				@* Beschrijving / Notities *@
-				<MudItem xs="12">
-					<MudText Typo="Typo.h6" Class="mb-2">Beschrijving</MudText>
-					<MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--mud-palette-lines-default);">
-						@if (string.IsNullOrWhiteSpace(CurrentConversation.Description))
-						{
-							<MudText Typo="Typo.body2" Color="Color.Secondary"><i>Geen beschrijving of samenvatting beschikbaar.</i></MudText>
-						}
-						else
-						{
-							<MudText Typo="Typo.body1">@CurrentConversation.Description</MudText>
-						}
-					</MudPaper>
-				</MudItem>
-
-			</MudGrid>
-
 		</MudPaper>
+
+		<MudGrid Spacing="3">
+			<MudItem xs="12" md="6">
+				<MudPaper Elevation="1" Class="pa-4" Style="border-radius: 12px;">
+					<MudText Typo="Typo.subtitle2" Color="Color.Default">Company</MudText>
+					<MudText Typo="Typo.body1">@CurrentConversation.CompanyName</MudText>
+				</MudPaper>
+			</MudItem>
+
+			<MudItem xs="12" md="6">
+				<MudPaper Elevation="1" Class="pa-4" Style="border-radius: 12px;">
+					<MudText Typo="Typo.subtitle2" Color="Color.Default">Meeting Date</MudText>
+					<MudText Typo="Typo.body1">@CurrentConversation.MeetingDate.ToString("dd MMMM yyyy, HH:mm")</MudText>
+				</MudPaper>
+			</MudItem>
+
+			<MudItem xs="12">
+				<MudPaper Elevation="1" Class="pa-4" Style="border-radius: 12px;">
+					<MudText Typo="Typo.subtitle2" Color="Color.Default" Class="mb-2">Description</MudText>
+					@if (string.IsNullOrWhiteSpace(CurrentConversation.Description))
+						{
+							<MudText Typo="Typo.body2" Color="Color.Default"><i>No description available.</i></MudText>
+						}
+					else
+					{
+						<MudText Typo="Typo.body1">@CurrentConversation.Description</MudText>
+					}
+				</MudPaper>
+			</MudItem>
+
+			<MudItem xs="12">
+				<MudPaper Elevation="1" Class="pa-4 mb-0" Style="border-radius: 12px;">
+					<MudText Typo="Typo.subtitle2" Color="Color.Default" Class="mb-2">Recordings</MudText>
+					@if (IsLoadingRecordings)
+					{
+						<div class="d-flex align-center">
+							<MudProgressCircular Color="Color.Primary" Size="Size.Small" Indeterminate="true" />
+							<MudText Class="ml-3">Checking for recordings...</MudText>
+						</div>
+					}
+					else if (AnalysisStates.Count == 0)
+					{
+						<MudText Typo="Typo.body2" Color="Color.Default">No recordings found for this conversation.</MudText>
+					}
+					else
+					{
+						@foreach (var rec in AnalysisStates)
+						{
+							<MudPaper Elevation="0" Class="pa-3 mb-3" Style="border-radius:12px; background-color: rgba(255,255,255,0.03);">
+								<div class="d-flex justify-space-between align-center mb-1">
+									<div>
+										<MudText Typo="Typo.subtitle2">Recorded @rec.Created.ToString("dd-MM-yyyy HH:mm")</MudText>
+										<MudText Typo="Typo.caption" Color="Color.Default">@System.IO.Path.GetFileName(rec.FilePath)</MudText>
+									</div>
+									<div>
+										@if (!string.IsNullOrWhiteSpace(rec.FilePath) && System.IO.File.Exists(rec.FilePath))
+										{
+											<MudChip T="string" Color="Color.Primary" Size="Size.Small">Local</MudChip>
+										}
+										else
+										{
+											<MudChip T="string" Color="Color.Secondary" Size="Size.Small">Unavailable</MudChip>
+										}
+									</div>
+								</div>
+
+								@{
+									var url = GetAudioDataUrl(rec.FilePath);
+								}
+
+								@if (!string.IsNullOrWhiteSpace(url))
+								{
+									<MudPaper Elevation="0" Class="pa-2" Style="border-radius:8px; background-color: rgba(0,0,0,0.05);">
+										<audio controls src="@url" class="w-100" style="outline:none; background:transparent;" />
+									</MudPaper>
+								}
+								else
+								{
+									<MudText Typo="Typo.caption" Color="Color.Secondary">Recording file not available on this machine.</MudText>
+								}
+							</MudPaper>
+						}
+					}
+				</MudPaper>
+			</MudItem>
+
+			<MudItem xs="12">
+				<MudPaper Elevation="1" Class="pa-4 mt-4" Style="border-radius: 12px;">
+					<div class="d-flex justify-space-between align-center mb-2">
+						<MudText Typo="Typo.subtitle2">Notes & Manual Summary</MudText>
+						<div>
+								<MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="OpenNotesEditorAsync">Open Editor</MudButton>
+								<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="SaveNotesAsync">Save Draft</MudButton>
+						</div>
+					</div>
+
+					@if (string.IsNullOrWhiteSpace(UserNotes))
+					{
+						<MudText Typo="Typo.body2" Color="Color.Secondary">No notes yet. Click "Open Editor" to write a summary or action points manually.</MudText>
+					}
+					else
+					{
+						<MudText Typo="Typo.body1" Class="mb-2">@UserNotes</MudText>
+					}
+				</MudPaper>
+			</MudItem>
+
+			<MudItem xs="12">
+				<MudPaper Elevation="1" Class="pa-4" Style="border-radius: 12px;">
+					<div class="d-flex justify-space-between align-center mb-3">
+						<MudText Typo="Typo.h6">Action Points</MudText>
+						<MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="NavigateToActionPoints">
+							Open Full List
+						</MudButton>
+					</div>
+
+					@if (IsLoadingActionPoints)
+					{
+						<div class="d-flex align-center">
+							<MudProgressCircular Color="Color.Primary" Size="Size.Small" Indeterminate="true" />
+							<MudText Class="ml-3">Loading action points...</MudText>
+						</div>
+					}
+					else if (!string.IsNullOrWhiteSpace(ActionPointErrorMessage))
+					{
+						<MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
+							@ActionPointErrorMessage
+						</MudAlert>
+					}
+					else if (ActionPointItems.Count == 0)
+					{
+						<MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+							No action points available for this conversation.
+						</MudAlert>
+					}
+					else
+					{
+						<MudTable Items="ActionPointItems" T="ActionPointDto" Hover="true" Dense="true" Elevation="0">
+							<HeaderContent>
+								<MudTh>Description</MudTh>
+								<MudTh>Due Date</MudTh>
+								<MudTh>Status</MudTh>
+							</HeaderContent>
+							<RowTemplate>
+								<MudTd DataLabel="Description">@context.Description</MudTd>
+								<MudTd DataLabel="Due Date">@context.DueDate.ToString("dd-MM-yyyy")</MudTd>
+								<MudTd DataLabel="Status">
+									<MudChip T="string" Color="@(context.IsCompleted ? Color.Success : Color.Warning)" Size="Size.Small">
+										@(context.IsCompleted ? "Completed" : "Open")
+									</MudChip>
+								</MudTd>
+							</RowTemplate>
+						</MudTable>
+					}
+				</MudPaper>
+			</MudItem>
+		</MudGrid>
 	}
 </MudContainer>
 
@@ -139,8 +269,13 @@
 	[Parameter]
 	public Guid ConversationId { get; set; }
 
-	private ConversationDto CurrentConversation { get; set; }
+	private ConversationDto? CurrentConversation { get; set; }
+	private List<ActionPointDto> ActionPointItems { get; set; } = new();
 	private bool IsLoading { get; set; } = true;
+	private bool IsLoadingActionPoints { get; set; }
+	private string ActionPointErrorMessage { get; set; } = string.Empty;
+	private bool IsLoadingRecordings { get; set; }
+	private List<AiAnalysisStateRecord> AnalysisStates { get; set; } = new();
 	private CancellationTokenSource TokenSource { get; set; } = new();
 
 	protected override async Task OnInitializedAsync()
@@ -149,11 +284,13 @@
 		{
 			IsLoading = true;
 			CurrentConversation = await ConversationService.GetConversationAsync(ConversationId, TokenSource.Token);
+			await LoadActionPointsAsync();
+			await LoadRecordingsAsync();
 		}
 		catch (Exception Ex)
 		{
-			Console.WriteLine($"Fout bij ophalen van gesprek: {Ex.Message}");
-			Snackbar.Add("Fout bij het laden van het gesprek.", Severity.Error);
+			Console.WriteLine($"Error loading conversation: {Ex.Message}");
+			Snackbar.Add("Failed to load conversation.", Severity.Error);
 		}
 		finally
 		{
@@ -161,9 +298,115 @@
 		}
 	}
 
+	private async Task LoadRecordingsAsync()
+	{
+		try
+		{
+			IsLoadingRecordings = true;
+			AnalysisStates.Clear();
+			var states = await AiMeetingAnalyzer.GetAnalysisStateByConversationIdAsync(ConversationId, TokenSource.Token);
+			if (states != null && states.Count > 0)
+			{
+				AnalysisStates = states.ToList();
+				foreach (var item in AnalysisStates)
+				{
+					if (!string.IsNullOrWhiteSpace(item.FilePath))
+					{
+						await LoadAudioDataUrlAsync(item.FilePath);
+					}
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Error loading recordings: {ex.Message}");
+		}
+		finally
+		{
+			IsLoadingRecordings = false;
+		}
+	}
+
+	private async Task<string?> LoadAudioDataUrlAsync(string filePath)
+	{
+		if (string.IsNullOrWhiteSpace(filePath)) return null;
+
+		if (AudioDataUrls.TryGetValue(filePath, out var cached)) return cached;
+
+		if (!System.IO.File.Exists(filePath)) return null;
+
+		var bytes = await System.IO.File.ReadAllBytesAsync(filePath);
+		var base64 = Convert.ToBase64String(bytes);
+		var url = $"data:audio/wav;base64,{base64}";
+		AudioDataUrls[filePath] = url;
+		return url;
+	}
+
+	private string? GetAudioDataUrl(string filePath)
+	{
+		if (string.IsNullOrWhiteSpace(filePath)) return null;
+		return AudioDataUrls.TryGetValue(filePath, out var url) ? url : null;
+	}
+
+	private Dictionary<string, string> AudioDataUrls { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+	private string UserNotes { get; set; } = string.Empty;
+
+	private async Task OpenNotesEditorAsync()
+	{
+		var parameters = new DialogParameters();
+		parameters.Add("Content", UserNotes);
+
+		var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+		var dialog = await DialogService.ShowAsync<ActivityAssistent.App.Components.Shared.TextEditorDialog>("Edit Notes & Summary", parameters, options);
+		var result = await dialog.Result;
+		if (!result.Canceled)
+		{
+			UserNotes = result.Data as string ?? string.Empty;
+			StateHasChanged();
+		}
+	}
+
+	private Task SaveNotesAsync()
+	{
+		// For now: local save only. Future: persist to server and/or send to AI for processing.
+		Snackbar.Add("Notes saved locally.", Severity.Success);
+		return Task.CompletedTask;
+	}
+
+
+	private async Task LoadActionPointsAsync()
+	{
+		try
+		{
+			IsLoadingActionPoints = true;
+			ActionPointErrorMessage = string.Empty;
+			var result = await ActionPointService.GetByConversationIdAsync(ConversationId, TokenSource.Token);
+			ActionPointItems = result?
+				.OrderBy(x => x.IsCompleted)
+				.ThenBy(x => x.DueDate)
+				.ToList() ?? new List<ActionPointDto>();
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Error loading action points: {ex.Message}");
+			ActionPointErrorMessage = "Failed to load action points.";
+		}
+		finally
+		{
+			IsLoadingActionPoints = false;
+		}
+	}
+
 	private void NavigateBack()
 	{
-		NavManager.NavigateTo("/SalesConversation/SalesConversationIndex");
+		if (CurrentConversation?.CompanyId != null && CurrentConversation.CompanyId != Guid.Empty)
+		{
+			NavManager.NavigateTo($"/SalesConversation/{CurrentConversation.CompanyId}");
+			return;
+		}
+
+		NavManager.NavigateTo("/SalesConversation/");
 	}
 
 	private void NavigateToRecord()
@@ -233,6 +476,19 @@
 			ConversationStatus.Completed => Color.Success,
 			ConversationStatus.Failed => Color.Error,
 			_ => Color.Default
+		};
+	}
+
+	private string GetStatusText(ConversationStatus status)
+	{
+		return status switch
+		{
+			ConversationStatus.Scheduled => "Scheduled",
+			ConversationStatus.Recording => "Recording",
+			ConversationStatus.Processing => "Processing",
+			ConversationStatus.Completed => "Completed",
+			ConversationStatus.Failed => "Failed",
+			_ => "Unknown"
 		};
 	}
 

@@ -19,13 +19,13 @@
 		@* Header met terug-knop *@
 		<div class="d-flex align-center mb-6">
 			<MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
-						   OnClick="@(() => NavManager.NavigateTo("/SalesConversation/SalesConversationIndex"))"
+						   OnClick="NavigateBack"
 						   Class="mr-2" />
-			<MudText Typo="Typo.h5" Color="Color.Primary"><b>Gesprek Voorbereiden</b></MudText>
+			<MudText Typo="Typo.h5" Color="Color.Primary"><b>Prepare Conversation</b></MudText>
 		</div>
 
 		<MudText Typo="Typo.body2" Class="mb-6" Color="Color.Secondary">
-			Vul de basisgegevens in zodat je de opname direct kunt starten zodra het gesprek begint.
+			Fill in the basic details so you can start recording immediately when the conversation begins.
 		</MudText>
 
 		<MudForm @ref="Form" @bind-IsValid="IsFormValid">
@@ -34,10 +34,10 @@
 				@* 1. Onderwerp / Titel *@
 				<MudItem xs="12">
 					<MudTextField T="string"
-								  Label="Onderwerp van het gesprek"
+								  Label="Conversation Title"
 								  Required="true"
-								  RequiredError="Geef het gesprek een herkenbare titel"
-								  Placeholder="bijv. Kennismaking met Jansen B.V."
+								  RequiredError="Please provide a recognizable title"
+								  Placeholder="e.g. Introduction with Jansen B.V."
 								  Variant="Variant.Outlined"
 								  @bind-Value="Conversation.Title" />
 				</MudItem>
@@ -45,14 +45,14 @@
 				@* 2. Klant Selectie (Lookup naar Account/Contact) *@
 				<MudItem xs="12">
 					<MudSelect T="Guid"
-							   Label="Klant / Bedrijf"
+							   Label="Customer / Company"
 							   Required="true"
-							   RequiredError="Selecteer een klant"
+							   RequiredError="Please select a customer"
 							   Variant="Variant.Outlined"
 							   AnchorOrigin="Origin.BottomCenter"
 							   @bind-Value="Conversation.CompanyId">
 
-						<MudSelectItem Value="@(Guid.Empty)">-- Selecteer een Klant --</MudSelectItem>
+						<MudSelectItem Value="@(Guid.Empty)">-- Select a Customer --</MudSelectItem>
 
 						@foreach (var Customer in Customers)
 						{
@@ -70,20 +70,20 @@
 								   StartIcon="@Icons.Material.Filled.Add"
 								   Size="Size.Small"
 								   OnClick="OpenCreateCustomerDialog">
-							Nieuwe klant aanmaken
+							Create new customer
 						</MudButton>
 					</div>
 				</MudItem>
 
 				@* 3. Datum en Tijd *@
 				<MudItem xs="12" sm="6">
-					<MudDatePicker Label="Datum afspraak"
+					<MudDatePicker Label="Meeting Date"
 								   @bind-Date="SelectedDate"
 								   Variant="Variant.Outlined"
 								   Editable="true" />
 				</MudItem>
 				<MudItem xs="12" sm="6">
-					<MudTimePicker Label="Tijdstip"
+					<MudTimePicker Label="Meeting Time"
 								   @bind-Time="SelectedTime"
 								   Variant="Variant.Outlined"
 								   Editable="true" />
@@ -92,7 +92,7 @@
 				@* 4. Medewerker (Read-only, want jij bent het) *@
 				<MudItem xs="12">
 					<MudTextField T="string"
-								  Label="Verkoopmedewerker"
+								  Label="Sales Employee"
 								  ReadOnly="true"
 								  Value="@UserProfile?.FullName"
 								  Variant="Variant.Outlined"
@@ -104,9 +104,9 @@
 				<MudItem xs="12" Class="d-flex justify-end mt-4">
 					<MudButton Variant="Variant.Text"
 							   Color="Color.Secondary"
-							   OnClick="@(() => NavManager.NavigateTo("/SalesConversation/SalesConversationIndex"))"
+							   OnClick="NavigateBack"
 							   Class="mr-2">
-						Annuleren
+						Cancel
 					</MudButton>
 					<MudButton Variant="Variant.Filled"
 							   Color="Color.Primary"
@@ -116,11 +116,11 @@
 						@if (IsSaving)
 						{
 							<MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-							<MudText Class="ms-2">Opslaan...</MudText>
+							<MudText Class="ms-2">Saving...</MudText>
 						}
 						else
 						{
-							<MudText>Opslaan & Klaarzetten</MudText>
+							<MudText>Save & Prepare</MudText>
 						}
 					</MudButton>
 				</MudItem>
@@ -131,6 +131,9 @@
 </MudContainer>
 
 @code {
+	[SupplyParameterFromQuery(Name = "companyId")]
+	public Guid? PreselectedCompanyId { get; set; }
+
 	[CascadingParameter]
 	public UserProfileDto UserProfile { get; set; } = new();
 	private bool IsSaving;
@@ -157,13 +160,33 @@
 		}
 		catch (Exception Ex)
 		{
-			Console.WriteLine($"CRASH TIJDENS LADEN PAGINA: {Ex.Message}");
+			Console.WriteLine($"Crash while loading page: {Ex.Message}");
 		}
+	}
+
+	private void NavigateBack()
+	{
+		if (PreselectedCompanyId.HasValue && PreselectedCompanyId.Value != Guid.Empty)
+		{
+			NavManager.NavigateTo($"/SalesConversation/{PreselectedCompanyId.Value}");
+			return;
+		}
+
+		NavManager.NavigateTo("/SalesConversation/");
 	}
 
 	private async Task GetCompanies()
 	{
-		Customers = await CompanyService.GetCustomerAsync(TokenSource.Token);
+		Customers = await CompanyService.GetCompanyNamesAsync(TokenSource.Token);
+
+		if (PreselectedCompanyId.HasValue && PreselectedCompanyId.Value != Guid.Empty)
+		{
+			var companyExists = Customers.Any(c => c.CompanyId == PreselectedCompanyId.Value);
+			if (companyExists)
+			{
+				Conversation.CompanyId = PreselectedCompanyId.Value;
+			}
+		}
 	}
 
 	private async Task HandleSave()
@@ -183,19 +206,19 @@
 
 				if (Result.ConversationId != Guid.Empty)
 				{
-					Snackbar.Add("Gesprek succesvol klaargezet!", Severity.Success);
+					Snackbar.Add("Conversation has been prepared successfully!", Severity.Success);
 					NavManager.NavigateTo($"/SalesConversation/Detail/{Result.ConversationId}");
 				}
 			}
 			catch (TaskCanceledException)
 			{
-				Console.WriteLine("Het opslaan is geannuleerd (bijv. door een time-out of navigatie).");
-				Snackbar.Add("Het opslaan duurde te lang of is afgebroken.", Severity.Warning);
+				Console.WriteLine("Saving was canceled (for example due to timeout or navigation).");
+				Snackbar.Add("Saving took too long or was canceled.", Severity.Warning);
 			}
 			catch (Exception Ex)
 			{
-				Console.WriteLine($"Fout tijdens opslaan: {Ex.Message}");
-				Snackbar.Add("Er ging iets mis bij het aanmaken van het gesprek.", Severity.Error);
+				Console.WriteLine($"Error while saving: {Ex.Message}");
+				Snackbar.Add("Something went wrong while creating the conversation.", Severity.Error);
 			}
 			finally
 			{
@@ -215,7 +238,7 @@
 			BackdropClick = true
 		};
 
-		var Dialog = await DialogService.ShowAsync<CreateCustomerDialog>("Nieuwe Klant Toevoegen", Options);
+		var Dialog = await DialogService.ShowAsync<CreateCustomerDialog>("Add New Customer", Options);
 		var Result = await Dialog.Result;
 
 		if (!Result.Canceled && Result.Data is true)

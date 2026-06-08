@@ -1,268 +1,168 @@
 @page "/SalesConversation/"
 @using MudBlazor
 @using ActivityAssistent.Shared.Dtos.Identity
+@using ActivityAssistent.App.Interfaces.companies
 @using ActivityAssistent.Shared.Enums
 @using ActivityAssistent.Shared.Dtos.Conversations
+@using ActivityAssistent.App.Components.Pages.Companies
 @using ActivityAssistent.App.Interfaces.Conversations
 @inject IConversationService ConversationService
+@inject ICompanyService CompanyService
 @inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
 @implements IDisposable
-
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudGrid Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+        <MudItem>
+            <MudText Typo="Typo.h4" Color="Color.Primary">Sales Conversations</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Select a company to view its recorded sales conversations and AI analyses.
+            </MudText>
+        </MudItem>
+        <MudItem>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="OpenCreateCustomerDialog">
+                Add Customer
+            </MudButton>
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Secondary"
+                       StartIcon="@Icons.Material.Filled.Summarize"
+                       OnClick="NavigateToSummaries"
+                       Class="ms-2">
+                Summaries
+            </MudButton>
+        </MudItem>
+    </MudGrid>
 
-	<MudGrid Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
-		<MudItem>
-			<MudText Typo="Typo.h4" Color="Color.Primary">Sales Conversations</MudText>
-			<MudText Typo="Typo.body2" Color="Color.Secondary">
-				Overview of recorded sales conversations and AI analyses.
-			</MudText>
-		</MudItem>
-		<MudItem>
-			<MudButton Variant="Variant.Filled"
-					   Color="Color.Primary"
-					   StartIcon="@Icons.Material.Filled.AddIcCall"
-					   Size="Size.Large"
-					   OnClick="NavigateToCreatePage">
-				Create a new conversation
-			</MudButton>
-		</MudItem>
-	</MudGrid>
-
-	<MudGrid Class="mb-6">
-		<MudItem xs="12" sm="4">
-			<MudCard Elevation="2" Class="pa-4">
-				<MudText Typo="Typo.subtitle2" Color="Color.Secondary">Total Conversations</MudText>
-				<MudText Typo="Typo.h4">@Conversations.Count</MudText>
-			</MudCard>
-		</MudItem>
-		<MudItem xs="12" sm="4">
-			<MudCard Elevation="2" Class="pa-4">
-				<MudText Typo="Typo.subtitle2" Color="Color.Warning">Processing by AI</MudText>
-				<MudText Typo="Typo.h4">@Conversations.Count(c => c.Status == ConversationStatus.Processing)</MudText>
-			</MudCard>
-		</MudItem>
-		<MudItem xs="12" sm="4">
-			<MudCard Elevation="2" Class="pa-4">
-				<MudText Typo="Typo.subtitle2" Color="Color.Success">Completed Analyses</MudText>
-				<MudText Typo="Typo.h4">@Conversations.Count(c => c.Status == ConversationStatus.Completed)</MudText>
-			</MudCard>
-		</MudItem>
-	</MudGrid>
-
-	<MudPaper Elevation="2" Class="pa-4 mb-6">
-		<MudGrid AlignItems="AlignItems.Center">
-			<MudItem xs="12" sm="6" md="4">
-				<MudTextField @bind-Value="SearchTerm"
-							  Placeholder="Search by customer or subject..."
-							  Adornment="Adornment.Start"
-							  AdornmentIcon="@Icons.Material.Filled.Search"
-							  IconSize="Size.Medium"
-							  Immediate="true" />
-			</MudItem>
-			<MudItem xs="12" sm="3" md="3">
-			<MudSelect @bind-Value="SelectedStatus" T="string" Label="Status Filter">
-				<MudSelectItem Value="@("All")">All statuses</MudSelectItem>
-				<MudSelectItem Value="@ConversationStatus.Scheduled.ToString()">Scheduled</MudSelectItem>
-				<MudSelectItem Value="@ConversationStatus.Recording.ToString()">Recording</MudSelectItem>
-				<MudSelectItem Value="@ConversationStatus.Processing.ToString()">Processing...</MudSelectItem>
-				<MudSelectItem Value="@ConversationStatus.Completed.ToString()">Completed</MudSelectItem>
-				<MudSelectItem Value="@ConversationStatus.Failed.ToString()">Failed</MudSelectItem>
-			</MudSelect>
-			</MudItem>
-			<MudItem xs="12" sm="3" md="2">
-				<MudDatePicker @bind-Date="FilterDate" Label="Date from" Editable="true" SaveOnBlur="true" />
-			</MudItem>
-			<MudItem xs="12" sm="12" md="3" Class="d-flex justify-sm-end">
-				<MudButton Variant="Variant.Outlined"
-						   Color="Color.Secondary"
-						   OnClick="ResetFilters"
-						   Class="mt-2">
-					Clear Filters
-				</MudButton>
-			</MudItem>
-		</MudGrid>
-	</MudPaper>
-
-	<MudPaper Elevation="2">
-		@if (IsLoadingConversations)
-		{
-			<div class="d-flex justify-center align-center pa-12">
-				<MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
-				<MudText Class="ml-4">Loading conversations...</MudText>
-			</div>
-		}
-		else
-		{
-			<MudTable Items="FilteredConversations" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
-				<HeaderContent>
-					<MudTh>Date</MudTh>
-					<MudTh>Customer / Subject</MudTh>
-					<MudTh>Employee</MudTh>
-					<MudTh>Status</MudTh>
-					<MudTh Style="text-align: right;">Actions</MudTh>
-				</HeaderContent>
-				<RowTemplate>
-					<MudTd DataLabel="Date">@context.MeetingDate.ToString("dd-MM-yyyy HH:mm")</MudTd>
-					<MudTd DataLabel="Customer / Subject">@GetConversationSubject(context)</MudTd>
-					<MudTd DataLabel="Employee">@UserProfile?.FullName</MudTd>
-					<MudTd DataLabel="Status">
-						<MudChip T="string" Color="GetStatusColor(context.Status)" Size="Size.Small">
-							@GetStatusText(context.Status)
-						</MudChip>
-					</MudTd>
-					<MudTd DataLabel="Actions" Style="text-align: right;">
-						<MudIconButton Icon="@Icons.Material.Filled.Visibility"
-									   Color="Color.Info"
-									   Size="Size.Small"
-									   OnClick="() => NavigateToDetail(context.ConversationId)" />
-						<MudIconButton Icon="@Icons.Material.Filled.Summarize"
-									   Color="Color.Primary"
-									   Size="Size.Small"
-									   OnClick="() => NavigateToSummary(context.ConversationId)" />
-						<MudIconButton Icon="@Icons.Material.Filled.Delete"
-									   Color="Color.Error"
-									   Size="Size.Small" />
-					</MudTd>
-				</RowTemplate>
-				<PagerContent>
-					<MudTablePager InfoFormat="{first_item}-{last_item} of {all_items}" RowsPerPageString="Rows per page:" />
-				</PagerContent>
-			</MudTable>
-		}
-	</MudPaper>
+    <MudPaper Elevation="2" Class="pa-4">
+        @if (IsLoadingConversations)
+        {
+            <div class="d-flex justify-center align-center pa-12">
+                <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                <MudText Class="ml-4">Loading companies...</MudText>
+            </div>
+        }
+        else
+        {
+            <MudTable Items="Companys"
+                      T="CompanyOverviewDto"
+                      Hover="true"
+                      Filter="new Func<CompanyOverviewDto,bool>(FilterFunc)"
+                      OnRowClick="@((args) => RowClicked(args))"
+                      Elevation="0">
+                <ToolBarContent>
+                    <MudSpacer />
+                    <MudTextField @bind-Value="searchString"
+                                  Placeholder="Search by company name..."
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  IconSize="Size.Medium"
+                                  Class="mt-0" />
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Company Name</MudTh>
+                    <MudTh>Total Conversations</MudTh>
+                    <MudTh>Last Contact</MudTh>
+                    <MudTh Style="text-align: right;">Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Company Name">@context.CompanyName</MudTd>
+                    <MudTd DataLabel="Total Conversations">@context.TotalConversations</MudTd>
+                    <MudTd DataLabel="Last Contact">
+                        @(context.LastContactDate.HasValue ? context.LastContactDate.Value.ToString("dd-MM-yyyy HH:mm") : "No conversations yet")
+                    </MudTd>
+                    <MudTd DataLabel="Actions" Style="text-align: right;">
+                        <MudIconButton Icon="@Icons.Material.Filled.ArrowForwardIos"
+                                       Color="Color.Primary"
+                                       Size="Size.Small" />
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager RowsPerPageString="Rows per page:" />
+                </PagerContent>
+            </MudTable>
+        }
+    </MudPaper>
 </MudContainer>
 
 @code {
-	[CascadingParameter]
-	public UserProfileDto? UserProfile { get; set; }
+    private List<CompanyOverviewDto> Companys { get; set; } = new List<CompanyOverviewDto>();
+    private bool IsLoadingConversations { get; set; } = false;
+    private string searchString = "";
+    private CancellationTokenSource TokenSource { get; set; } = new();
 
-	private string SearchTerm { get; set; } = string.Empty;
-	private string SelectedStatus { get; set; } = "All";
-	private DateTime? FilterDate { get; set; }
-	private bool IsLoadingConversations { get; set; } = false;
+    protected override async Task OnInitializedAsync()
+    {
+        await GetCompanyOverview();
+    }
 
-	private List<ConversationDto> Conversations { get; set; } = new List<ConversationDto>();
-	private CancellationTokenSource TokenSource { get; set; } = new();
+    private async Task GetCompanyOverview()
+    {
+        IsLoadingConversations = true;
+        try
+        {
+            var data = await CompanyService.GetCompanyOverviewAsync(TokenSource.Token);
+            Companys = data ?? new List<CompanyOverviewDto>();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Failed to load companies. Please try again later.", Severity.Error);
+        }
+        finally
+        {
+            IsLoadingConversations = false;
+        }
+    }
 
-	private IEnumerable<ConversationDto> FilteredConversations
-	{
-		get
-		{
-			var query = Conversations.AsEnumerable();
+    private async Task OpenCreateCustomerDialog()
+    {
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            BackdropClick = true
+        };
 
-			if (!string.IsNullOrWhiteSpace(SearchTerm))
-			{
-				query = query.Where(c => c.CompanyName != null &&
-										 c.CompanyName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase));
-			}
+        var dialog = await DialogService.ShowAsync<CreateCustomerDialog>("Add New Customer", options);
+        var result = await dialog.Result;
 
-			if (SelectedStatus != "All")
-			{
-				query = query.Where(c => c.Status.ToString() == SelectedStatus);
-			}
+        if (!result.Canceled && result.Data is true)
+        {
+            await GetCompanyOverview();
+            Snackbar.Add("New customer has been added!", Severity.Success);
+        }
+    }
 
-			if (FilterDate.HasValue)
-			{
-				query = query.Where(c => c.MeetingDate.Date >= FilterDate.Value.Date);
-			}
+    // Navigate to the detail page within the SalesConversation structure
+    private void RowClicked(TableRowClickEventArgs<CompanyOverviewDto> args)
+    {
+        NavigationManager.NavigateTo($"/SalesConversation/{args.Item.CompanyId}");
+    }
 
-			return query;
-		}
-	}
+    private void NavigateToSummaries()
+    {
+        NavigationManager.NavigateTo("/SalesConversation/Summaries");
+    }
 
-	protected override async Task OnInitializedAsync()
-	{
-		await LoadConversationsAsync();
-	}
+    // Filter function that searches on the correct property: CompanyName
+    private bool FilterFunc(CompanyOverviewDto company)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
 
-	private async Task LoadConversationsAsync()
-	{
-		IsLoadingConversations = true;
-		try
-		{
-			var result = await ConversationService.GetAllAsync(TokenSource.Token);
-			Conversations = result?.ToList() ?? new List<ConversationDto>();
-		}
-		catch
-		{
-		}
-		finally
-		{
-			IsLoadingConversations = false;
-		}
-	}
+        if (company.CompanyName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
 
-	private Color GetStatusColor(ConversationStatus Status)
-	{
-		return Status switch
-		{
-			ConversationStatus.Scheduled => Color.Info,
-			ConversationStatus.Recording => Color.Secondary,
-			ConversationStatus.Processing => Color.Warning,
-			ConversationStatus.Completed => Color.Success,
-			ConversationStatus.Failed => Color.Error,
-			_ => Color.Default
-		};
-	}
+        return false;
+    }
 
-	private string GetStatusText(ConversationStatus Status)
-	{
-		return Status switch
-		{
-			ConversationStatus.Scheduled => "Scheduled",
-			ConversationStatus.Recording => "Recording",
-			ConversationStatus.Processing => "Processing...",
-			ConversationStatus.Completed => "Completed",
-			ConversationStatus.Failed => "Failed",
-			_ => "Unknown"
-		};
-	}
-
-	private void NavigateToCreatePage()
-	{
-		NavigationManager.NavigateTo("/SalesConversation/Create");
-	}
-
-	private void NavigateToDetail(Guid ConversationId)
-	{
-		NavigationManager.NavigateTo($"/SalesConversation/Detail/{ConversationId}");
-	}
-
-	private void NavigateToSummary(Guid ConversationId)
-	{
-		NavigationManager.NavigateTo($"/SalesConversation/Summary/{ConversationId}");
-	}
-
-	private string GetConversationSubject(ConversationDto conversation)
-	{
-		if (!string.IsNullOrWhiteSpace(conversation.CompanyName) && !string.IsNullOrWhiteSpace(conversation.Title))
-		{
-			return $"{conversation.CompanyName} - {conversation.Title}";
-		}
-
-		if (!string.IsNullOrWhiteSpace(conversation.CompanyName))
-		{
-			return conversation.CompanyName;
-		}
-
-		if (!string.IsNullOrWhiteSpace(conversation.Title))
-		{
-			return conversation.Title;
-		}
-
-		return "Unknown";
-	}
-
-	private void ResetFilters()
-	{
-		SearchTerm = string.Empty;
-		SelectedStatus = "All";
-		FilterDate = null;
-	}
-
-	public void Dispose()
-	{
-		TokenSource.Cancel();
-		TokenSource.Dispose();
-	}
+    public void Dispose()
+    {
+        TokenSource.Cancel();
+        TokenSource.Dispose();
+    }
 }

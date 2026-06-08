@@ -3,10 +3,16 @@
 @using MudBlazor
 @using Microsoft.Maui.Media
 @using ActivityAssistent.App.Interfaces.Email
+@using ActivityAssistent.App.Interfaces.ActionPoint
+@using ActivityAssistent.Shared.Dtos.ActionPoints
+@using ActivityAssistent.Shared.Dtos.Identity
 @inject ActivityAssistent.App.Interfaces.Ai.IAiMeetingAnalyzer AiMeetingAnalyzer
 @inject ActivityAssistent.App.Interfaces.Conversations.IConversationService ConversationService
 @inject IEmailService EmailService
 @inject IDialogService DialogService
+@inject IActionPointService ActionPointService
+@inject NavigationManager NavManager
+@inject ISnackbar Snackbar
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-6">
 	<MudText Typo="Typo.h4" Color="Color.Primary">Summary</MudText>
@@ -35,57 +41,160 @@
 	else
 	{
 		<MudStack Spacing="3">
-			@foreach (var item in AnalysisStates)
+			<MudPaper Elevation="1" Class="pa-3" Style="border-radius:10px;">
+				<MudText Typo="Typo.h6" Class="mb-2">Recording Summaries</MudText>
+				<MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1">
+					@if (HasUnsavedActionPoints)
+					{
+						<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ConfirmCreateActionPointsAsync" Disabled="IsSaving">Create ActionPoints</MudButton>
+					}
+					<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="OpenActionPoints">Open ActionPoints</MudButton>
+				</MudStack>
+			</MudPaper>
+
+			@if (IsSaving)
 			{
-				<MudPaper Elevation="2" Class="pa-4">
-				<MudText Typo="Typo.subtitle2" Color="Color.Default" Class="mb-2">
-						@ConversationTitle
-					</MudText>
-					<MudText Typo="Typo.subtitle1">AI Summary</MudText>
-				<MudText Typo="Typo.body2" Color="Color.Default" Class="mb-4">
-						@if (string.IsNullOrWhiteSpace(item.AiSummary))
-						{
-							<span>No AI summary available.</span>
-						}
-						else
-						{
-							@item.AiSummary
-						}
-					</MudText>
-					<MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="string.IsNullOrWhiteSpace(item.AiSummary)" OnClick="() => SpeakSummaryAsync(item.AiSummary)">
-						Play summary
-					</MudButton>
-					<MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="ml-2" Disabled="string.IsNullOrWhiteSpace(item.AiSummary)" OnClick="() => OpenEmailDialogAsync(item)">
-						Email summary
-					</MudButton>
-					@if (SummaryErrorMessages.TryGetValue(item.Token, out var summaryError))
-					{
-						<MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Class="mt-3">
-							@summaryError
-						</MudAlert>
-					}
+				<MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+					Saving action points...
+				</MudAlert>
+			}
+			else if (!HasUnsavedActionPoints)
+			{
+				<MudAlert Severity="Severity.Success" Variant="Variant.Outlined">
+					All extracted action points are already created.
+				</MudAlert>
+			}
 
-					<MudDivider Class="my-3" />
-
-					<MudText Typo="Typo.subtitle1">Recording</MudText>
-				<MudText Typo="Typo.body2" Color="Color.Default" Class="mb-2">
-						@if (string.IsNullOrWhiteSpace(item.FilePath))
-						{
-							<span>No recording available.</span>
-						}
-						else
-						{
-							@item.FilePath
-						}
-					</MudText>
-					@{
-						var audioDataUrl = GetAudioDataUrl(item.FilePath);
-					}
-					@if (!string.IsNullOrWhiteSpace(audioDataUrl))
+			<MudPaper Elevation="1" Class="pa-3" Style="border-radius:10px;">
+				<MudText Typo="Typo.subtitle1" Class="mb-2">Conversation Action Points (@ExistingActionPoints.Count)</MudText>
+				@if (!ExistingActionPoints.Any())
+				{
+					<MudText Typo="Typo.body2" Color="Color.Secondary">No saved action points found for this conversation.</MudText>
+				}
+				else
+				{
+					@foreach (var ap in ExistingActionPoints)
 					{
-						<audio controls src="@audioDataUrl" class="mt-2 w-100"></audio>
+						<MudPaper Elevation="0" Class="pa-2 mb-2" Style="border:1px solid rgba(255,255,255,0.12); border-radius:8px;">
+							<MudText Typo="Typo.body2">@ap.Description</MudText>
+							<MudText Typo="Typo.caption" Color="Color.Secondary">
+								Due: @ap.DueDate.ToString("dd-MM-yyyy") • Status: @(ap.IsCompleted ? "Completed" : "Open")
+							</MudText>
+						</MudPaper>
+					}
+				}
+			</MudPaper>
+
+			@if (AnalysisStates.Count == 0)
+			{
+				<MudText Typo="Typo.body2" Color="Color.Secondary">No summaries available for this conversation.</MudText>
+			}
+			else
+			{
+				<MudPaper Elevation="1" Class="pa-3 mb-3" Style="border-radius:10px;">
+					<MudText Typo="Typo.subtitle1" Class="mb-2">Email overview</MudText>
+					@foreach (var overviewItem in AnalysisStates)
+					{
+						<div class="d-flex justify-space-between align-center mb-2">
+							<MudText Typo="Typo.body2">@overviewItem.Created.ToString("dd-MM-yyyy HH:mm")</MudText>
+							<MudButton Variant="Variant.Text"
+									   Color="Color.Primary"
+									   Disabled="string.IsNullOrWhiteSpace(overviewItem.AiSummary) || IsSaving"
+									   OnClick="() => OpenEmailDialogAsync(overviewItem)">
+								Email summary
+							</MudButton>
+						</div>
 					}
 				</MudPaper>
+
+				@foreach (var item in AnalysisStates)
+				{
+					<MudPaper Elevation="2" Class="pa-4 mb-3" Style="border-radius:10px;">
+						<MudText Typo="Typo.subtitle2" Color="Color.Default" Class="mb-2">
+							@ConversationTitle
+						</MudText>
+						<MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-block">
+							Recorded on: @item.Created.ToString("dd-MM-yyyy HH:mm")
+						</MudText>
+
+						<MudText Typo="Typo.subtitle1">AI Summary</MudText>
+						<MudText Typo="Typo.body2" Color="Color.Default" Class="mb-4">
+							@if (string.IsNullOrWhiteSpace(item.AiSummary))
+							{
+								<span>No AI summary available.</span>
+							}
+							else
+							{
+								@item.AiSummary
+							}
+						</MudText>
+
+						<MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="string.IsNullOrWhiteSpace(item.AiSummary) || IsSaving" OnClick="() => SpeakSummaryAsync(item.AiSummary)">
+							Play summary
+						</MudButton>
+						<MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="ml-2" Disabled="string.IsNullOrWhiteSpace(item.AiSummary) || IsSaving" OnClick="() => OpenEmailDialogAsync(item)">
+							Email summary
+						</MudButton>
+
+						@if (SummaryErrorMessages.TryGetValue(item.Token, out var summaryError))
+						{
+							<MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Class="mt-3">
+								@summaryError
+							</MudAlert>
+						}
+
+						<MudDivider Class="my-3" />
+
+						<MudText Typo="Typo.subtitle1">Recording</MudText>
+						<MudText Typo="Typo.body2" Color="Color.Default" Class="mb-2">
+							@if (string.IsNullOrWhiteSpace(item.FilePath))
+							{
+								<span>No recording available.</span>
+							}
+							else
+							{
+								@item.FilePath
+							}
+						</MudText>
+						@{
+							var audioDataUrl = GetAudioDataUrl(item.FilePath);
+						}
+						@if (!string.IsNullOrWhiteSpace(audioDataUrl))
+						{
+							<audio controls src="@audioDataUrl" class="mt-2 w-100"></audio>
+						}
+
+						<MudDivider Class="my-3" />
+						<div class="d-flex justify-space-between align-center mb-2">
+							<MudText Typo="Typo.subtitle1">Extracted Action Points (@GetEditablePointsForToken(item.Token).Count())</MudText>
+						</div>
+
+						@if (!GetEditablePointsForToken(item.Token).Any())
+						{
+							<MudText Typo="Typo.body2" Color="Color.Secondary">No action points extracted for this recording.</MudText>
+						}
+						else
+						{
+							@foreach (var ep in GetEditablePointsForToken(item.Token).ToList())
+							{
+								<MudPaper Elevation="1" Class="pa-3 mb-2" Style="border-radius:8px;">
+									<MudText Typo="Typo.caption" Class="mb-2">Point from recording @item.Created.ToString("dd-MM-yyyy HH:mm")</MudText>
+
+									<MudTextField @bind-Value="ep.Description" Label="Description" Lines="2" FullWidth="true" Disabled="ep.IsSaved || IsSaving" />
+									<div class="d-flex align-center mt-2">
+										<MudDatePicker T="DateTime?" @bind-Date="ep.DueDate" Label="Due date" Disabled="ep.IsSaved || IsSaving" />
+										<MudSwitch T="bool" @bind-Checked="ep.IsCompleted" Class="ml-4" Color="Color.Primary" Disabled="ep.IsSaved || IsSaving">Completed</MudSwitch>
+									</div>
+
+									@if (ep.IsSaved)
+									{
+										<MudText Typo="Typo.caption" Color="Color.Success" Class="mt-1">Saved</MudText>
+									}
+								</MudPaper>
+							}
+						}
+					</MudPaper>
+				}
 			}
 		</MudStack>
 	}
@@ -95,6 +204,9 @@
 	[Parameter]
 	public Guid ConversationId { get; set; }
 
+	[CascadingParameter]
+	public ActivityAssistent.Shared.Dtos.Identity.UserProfileDto? UserProfile { get; set; }
+
 	private bool IsLoading { get; set; } = true;
 	private string ErrorMessage { get; set; } = string.Empty;
 	private List<AiAnalysisStateRecord> AnalysisStates { get; set; } = new();
@@ -103,6 +215,138 @@
 	private readonly Dictionary<Guid, string> SummaryErrorMessages = new();
 
 	private Dictionary<string, string> AudioDataUrls { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+	private class EditableExtractedPoint
+	{
+		public Guid SourceToken { get; set; }
+		public string Description { get; set; } = string.Empty;
+		public DateTime? DueDate { get; set; } = DateTime.Today;
+		public bool IsCompleted { get; set; }
+		public bool IsSelected { get; set; }
+		public bool IsSaved { get; set; }
+	}
+
+	private List<EditableExtractedPoint> ExtractedPoints { get; set; } = new();
+	private List<ActionPointDto> ExistingActionPoints { get; set; } = new();
+
+	private IEnumerable<EditableExtractedPoint> GetEditablePointsForToken(Guid token)
+	{
+		return ExtractedPoints.Where(x => x.SourceToken == token);
+	}
+
+	private void MapAnalysisStatesToEditable()
+	{
+		ExtractedPoints.Clear();
+		foreach (var state in AnalysisStates)
+		{
+			if (state.ActionPoints == null) continue;
+			foreach (var ap in state.ActionPoints)
+			{
+				ExtractedPoints.Add(new EditableExtractedPoint
+				{
+					SourceToken = state.Token,
+					Description = ap.Description ?? string.Empty,
+					DueDate = ap.DueDate == default ? DateTime.Today : ap.DueDate,
+					IsCompleted = ap.IsCompleted,
+					IsSelected = true
+				});
+			}
+		}
+
+		foreach (var existing in ExistingActionPoints)
+		{
+			var alreadyMapped = ExtractedPoints.Any(x =>
+				string.Equals(x.Description?.Trim(), existing.Description?.Trim(), StringComparison.OrdinalIgnoreCase) &&
+				x.DueDate?.Date == existing.DueDate.Date);
+
+			if (!alreadyMapped)
+			{
+				ExtractedPoints.Add(new EditableExtractedPoint
+				{
+					SourceToken = AnalysisStates.FirstOrDefault()?.Token ?? Guid.Empty,
+					Description = existing.Description ?? string.Empty,
+					DueDate = existing.DueDate,
+					IsCompleted = existing.IsCompleted,
+					IsSelected = false,
+					IsSaved = true
+				});
+			}
+		}
+	}
+
+	private bool IsSaving { get; set; }
+	private bool HasUnsavedActionPoints => ExtractedPoints.Any(x => !x.IsSaved);
+
+	private void OpenActionPoints()
+	{
+		NavManager.NavigateTo($"/SalesConversation/{ConversationId}/ActionPoints?returnTo=summary");
+	}
+
+	private async Task ConfirmCreateActionPointsAsync()
+	{
+		var count = ExtractedPoints.Count(x => !x.IsSaved);
+		if (count == 0)
+		{
+			Snackbar.Add("All extracted action points are already created.", Severity.Info);
+			return;
+		}
+
+		var parameters = new DialogParameters { ["Title"] = "Create ActionPoints", ["Message"] = $"Create {count} action points?" };
+		var dialog = await DialogService.ShowAsync<ActivityAssistent.App.Components.Shared.ConfirmDialog>("Confirm", parameters);
+		var result = await dialog.Result;
+		if (!result.Canceled)
+		{
+			await SaveAllActionPointsAsync();
+		}
+	}
+
+	private async Task SaveAllActionPointsAsync()
+	{
+		// Create action points for all extracted action points across analysis states
+		var unsaved = ExtractedPoints.Where(x => !x.IsSaved).ToList();
+		if (!unsaved.Any())
+		{
+			Snackbar.Add("All extracted action points are already saved.", Severity.Info);
+			return;
+		}
+
+		IsSaving = true;
+		try
+		{
+			var toCreate = new List<(EditableExtractedPoint Point, CreateActionPointDto Dto)>();
+			foreach (var ep in unsaved)
+			{
+				var dto = new CreateActionPointDto
+				{
+					ConversationId = ConversationId,
+					Description = ep.Description,
+					DueDate = ep.DueDate ?? DateTime.Today,
+					IsCompleted = ep.IsCompleted,
+					SalesUserId = UserProfile?.UserId ?? Guid.Empty,
+					SubNrId = UserProfile?.SubNrId ?? Guid.Empty
+				};
+				toCreate.Add((ep, dto));
+			}
+
+			foreach (var entry in toCreate)
+			{
+				await ActionPointService.CreateActionPointAsync(entry.Dto, TokenSource.Token);
+				entry.Point.IsSaved = true;
+				entry.Point.IsSelected = false;
+			}
+
+			Snackbar.Add($"Saved {toCreate.Count} action points.", Severity.Success);
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Error saving action points: {ex.Message}");
+			Snackbar.Add("Failed to save action points.", Severity.Error);
+		}
+		finally
+		{
+			IsSaving = false;
+		}
+	}
 
 	private async Task<string?> LoadAudioDataUrlAsync(string filePath)
 	{
@@ -192,6 +436,7 @@
 			var conversation = await ConversationService.GetConversationAsync(ConversationId, TokenSource.Token);
 			ConversationTitle = string.IsNullOrWhiteSpace(conversation?.Title) ? "" : conversation.Title;
 			AnalysisStates = (await AiMeetingAnalyzer.GetAnalysisStateByConversationIdAsync(ConversationId, TokenSource.Token)).ToList();
+			ExistingActionPoints = await ActionPointService.GetByConversationIdAsync(ConversationId, TokenSource.Token);
 			foreach (var item in AnalysisStates)
 			{
 				if (!string.IsNullOrWhiteSpace(item.FilePath))
@@ -199,6 +444,8 @@
 					await LoadAudioDataUrlAsync(item.FilePath);
 				}
 			}
+
+			MapAnalysisStatesToEditable();
 		}
 		catch (Exception ex)
 		{

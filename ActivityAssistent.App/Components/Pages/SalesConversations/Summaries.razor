@@ -1,0 +1,207 @@
+@page "/SalesConversation/Summaries"
+@using ActivityAssistent.App.Interfaces.Ai
+@using ActivityAssistent.App.Interfaces.Conversations
+@using ActivityAssistent.Shared.Dtos.Conversations
+@using ActivityAssistent.Shared.Enums
+@using MudBlazor
+@inject IConversationService ConversationService
+@inject IAiMeetingAnalyzer AiMeetingAnalyzer
+@inject NavigationManager NavManager
+@inject ISnackbar Snackbar
+@implements IDisposable
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
+	<MudText Typo="Typo.h4" Color="Color.Primary">Summaries</MudText>
+	<MudText Typo="Typo.body2" Class="mb-4">Open AI summaries and email actions from one place.</MudText>
+
+	<MudPaper Elevation="1" Class="pa-4 mb-4" Style="border-radius: 12px;">
+		<MudTextField T="string"
+					  Label="Search conversation"
+					  Variant="Variant.Outlined"
+					  Adornment="Adornment.Start"
+					  AdornmentIcon="@Icons.Material.Filled.Search"
+					  Immediate="true"
+					  @bind-Value="Search" />
+	</MudPaper>
+
+	<MudPaper Elevation="1" Class="pa-4" Style="border-radius: 12px;">
+		@if (IsLoading)
+		{
+			<div class="d-flex align-center">
+				<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small" />
+				<MudText Class="ml-3">Loading summaries...</MudText>
+			</div>
+		}
+		else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+		{
+			<MudAlert Severity="Severity.Error" Variant="Variant.Outlined">@ErrorMessage</MudAlert>
+		}
+		else if (!FilteredGroups.Any())
+		{
+			<MudAlert Severity="Severity.Info" Variant="Variant.Outlined">No conversations found.</MudAlert>
+		}
+		else
+		{
+			<MudTabs Rounded="true" Border="true" Class="mt-2">
+				@foreach (var group in FilteredGroups)
+				{
+					// Sla de gefilterde rijen één keer op per groepsfase
+					var groupRows = GetRowsForGroup(group);
+
+					// Voeg het @key attribuut toe voor een foutloze rendering
+					<MudTabPanel @key="group.CompanyId" Text="@($"{group.CompanyName} ({groupRows.Count})")">
+						@if (!groupRows.Any())
+						{
+							<MudText Class="pa-4">No summaries found for this customer.</MudText>
+						}
+						else
+						{
+							<MudTable Items="groupRows" T="ConversationSummaryRow" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+								<HeaderContent>
+									<MudTh>Conversation</MudTh>
+									<MudTh>Meeting date</MudTh>
+									<MudTh>Status</MudTh>
+									<MudTh>Recordings</MudTh>
+									<MudTh Style="text-align:right;">Actions</MudTh>
+								</HeaderContent>
+								<RowTemplate>
+									<MudTd DataLabel="Conversation">@context.Title</MudTd>
+									<MudTd DataLabel="Meeting date">@context.MeetingDate.ToString("dd-MM-yyyy HH:mm")</MudTd>
+									<MudTd DataLabel="Status">
+										<MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)">@context.Status</MudChip>
+									</MudTd>
+									<MudTd DataLabel="Recordings">@context.RecordingCount</MudTd>
+									<MudTd DataLabel="Actions" Style="text-align:right;">
+										<MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="() => OpenSummary(context.ConversationId)">
+											Open summary
+										</MudButton>
+									</MudTd>
+								</RowTemplate>
+							</MudTable>
+						}
+					</MudTabPanel>
+				}
+			</MudTabs>
+		}
+	</MudPaper>
+</MudContainer>
+
+@code {
+	private sealed class ConversationSummaryRow
+	{
+		public Guid ConversationId { get; set; }
+		public Guid CompanyId { get; set; }
+		public string CompanyName { get; set; } = string.Empty;
+		public string Title { get; set; } = string.Empty;
+		public DateTime MeetingDate { get; set; }
+		public ConversationStatus Status { get; set; }
+		public int RecordingCount { get; set; }
+	}
+
+	private sealed class CompanySummaryGroup
+	{
+		public Guid CompanyId { get; set; }
+		public string CompanyName { get; set; } = string.Empty;
+		public List<ConversationSummaryRow> Summaries { get; set; } = new();
+	}
+
+	private bool IsLoading { get; set; } = true;
+	private string ErrorMessage { get; set; } = string.Empty;
+	private string Search { get; set; } = string.Empty;
+	private List<CompanySummaryGroup> Groups { get; set; } = new();
+	private CancellationTokenSource TokenSource { get; } = new();
+
+	private IEnumerable<CompanySummaryGroup> FilteredGroups => Groups
+		.Where(x => GetRowsForGroup(x).Any())
+		.OrderBy(x => x.CompanyName);
+
+	private List<ConversationSummaryRow> GetRowsForGroup(CompanySummaryGroup group)
+	{
+		return group.Summaries
+			.Where(x => string.IsNullOrWhiteSpace(Search)
+				|| x.Title.Contains(Search, StringComparison.OrdinalIgnoreCase)
+				|| group.CompanyName.Contains(Search, StringComparison.OrdinalIgnoreCase))
+			.OrderByDescending(x => x.MeetingDate)
+			.ToList();
+	}
+
+	protected override async Task OnInitializedAsync()
+	{
+		await LoadRowsAsync();
+	}
+
+	private async Task LoadRowsAsync()
+	{
+		try
+		{
+			IsLoading = true;
+			ErrorMessage = string.Empty;
+
+			var conversations = await ConversationService.GetAllAsync(TokenSource.Token);
+			var ordered = conversations
+				.OrderByDescending(x => x.MeetingDate)
+				.ToList();
+
+			var tasks = ordered.Select(async conversation =>
+			{
+				var states = await AiMeetingAnalyzer.GetAnalysisStateByConversationIdAsync(conversation.ConversationId, TokenSource.Token);
+				return new ConversationSummaryRow
+				{
+					ConversationId = conversation.ConversationId,
+					CompanyId = conversation.CompanyId,
+					CompanyName = string.IsNullOrWhiteSpace(conversation.CompanyName) ? "Unknown customer" : conversation.CompanyName,
+					Title = string.IsNullOrWhiteSpace(conversation.Title) ? "Untitled conversation" : conversation.Title,
+					MeetingDate = conversation.MeetingDate,
+					Status = conversation.Status,
+					RecordingCount = states.Count
+				};
+			});
+
+			var rows = (await Task.WhenAll(tasks)).ToList();
+			Groups = rows
+				.GroupBy(x => new { x.CompanyId, x.CompanyName })
+				.Select(x => new CompanySummaryGroup
+				{
+					CompanyId = x.Key.CompanyId,
+					CompanyName = x.Key.CompanyName,
+					Summaries = x.OrderByDescending(y => y.MeetingDate).ToList()
+				})
+				.OrderBy(x => x.CompanyName)
+				.ToList();
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Error loading summaries overview: {ex.Message}");
+			ErrorMessage = "Failed to load summaries overview.";
+			Snackbar.Add("Failed to load summaries overview.", Severity.Error);
+		}
+		finally
+		{
+			IsLoading = false;
+		}
+	}
+
+	private void OpenSummary(Guid conversationId)
+	{
+		NavManager.NavigateTo($"/SalesConversation/Summary/{conversationId}");
+	}
+
+	private static Color GetStatusColor(ConversationStatus status)
+	{
+		return status switch
+		{
+			ConversationStatus.Scheduled => Color.Info,
+			ConversationStatus.Recording => Color.Secondary,
+			ConversationStatus.Processing => Color.Warning,
+			ConversationStatus.Completed => Color.Success,
+			ConversationStatus.Failed => Color.Error,
+			_ => Color.Default
+		};
+	}
+
+	public void Dispose()
+	{
+		TokenSource.Cancel();
+		TokenSource.Dispose();
+	}
+}

@@ -1,0 +1,31 @@
+@using MudBlazor
+
+<MudDialog>
+	<DialogContent>
+		<MudText Typo="Typo.h6">Edit Notes & Summary</MudText>
+		<MudTextField @bind-Value="Content" Lines="10" FullWidth="true" Immediate="true"/>
+	</DialogContent>
+	<DialogActions>
+		<MudButton Variant="Variant.Text" Color="Color.Default" OnClick="Cancel">Cancel</MudButton>
+		<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save">Save</MudButton>
+	</DialogActions>
+
+</MudDialog>
+
+@code {
+	[CascadingParameter]
+	IMudDialogInstance MudDialog { get; set; }
+
+	[Parameter]
+	public string Content { get; set; } = string.Empty;
+
+	private void Save()
+	{
+		MudDialog.Close(DialogResult.Ok(Content));
+	}
+
+	private void Cancel()
+	{
+		MudDialog.Cancel();
+	}
+}

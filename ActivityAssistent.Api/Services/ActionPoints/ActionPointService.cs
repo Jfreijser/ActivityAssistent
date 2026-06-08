@@ -2,85 +2,144 @@ using ActivityAssistent.Api.Interfaces.ActionPoint;
 using ActivityAssistent.Api.Interfaces.Identity;
 using ActivityAssistent.Shared.Dtos.ActionPoints;
 using ActivityAssistent.Shared.Dtos.Identity;
+using ActivityAssistent.Shared.Dtos.Response;
 
 namespace ActivityAssistent.Api.Services.ActionPoints
 {
     public class ActionPointService(IActionPointRepository ActionPointRepository, IUserContext UserContext, IUserRepository UserRepository) : IActionPointService
     {
-        public async global::System.Threading.Tasks.Task<ActionPointDto> CreateActionPointAsync(CreateActionPointDto ActionPoint, CancellationToken Token)
+        public async Task<ApiResponse<ActionPointDto>> CreateActionPointAsync(CreateActionPointDto ActionPoint, CancellationToken Token)
         {
-            ActionPoint.SubNrId = UserContext.SubNrId ?? Guid.Empty;
-            ActionPoint.SalesUserId = await ResolveSalesUserIdAsync(ActionPoint.SalesUserId, Token);
-
-            var createdId = await ActionPointRepository.CreateAsync(ActionPoint, Token);
-            if (createdId == Guid.Empty)
+            try
             {
-                throw new InvalidOperationException("Failed to create the action point.");
-            }
+                ActionPoint.SubNrId = UserContext.SubNrId ?? Guid.Empty;
+                ActionPoint.SalesUserId = await ResolveSalesUserIdAsync(ActionPoint.SalesUserId, Token);
 
-            var created = await ActionPointRepository.GetByIdAsync(createdId, Token);
-            return created ?? new ActionPointDto();
+                var createdId = await ActionPointRepository.CreateAsync(ActionPoint, Token);
+                if (createdId == Guid.Empty)
+                {
+                    return Fail(new ActionPointDto(), "Failed to create the action point.");
+                }
+
+                var created = await ActionPointRepository.GetByIdAsync(createdId, Token);
+                return created is null
+                    ? Fail(new ActionPointDto(), "Failed to load the created action point.")
+                    : Ok(created);
+            }
+            catch (Exception ex)
+            {
+                return Fail(new ActionPointDto(), ex.Message);
+            }
         }
 
-        public async global::System.Threading.Tasks.Task<bool> DeleteActionPointAsync(Guid ActionPointId, CancellationToken Token)
+        public async Task<ApiResponse<bool>> DeleteActionPointAsync(Guid ActionPointId, CancellationToken Token)
         {
-            var result = await ActionPointRepository.DeleteAsync(ActionPointId, Token);
-            if (!result)
+            try
             {
-                throw new InvalidOperationException("Failed to delete the action point.");
-            }
+                var result = await ActionPointRepository.DeleteAsync(ActionPointId, Token);
+                if (!result)
+                {
+                    return Fail(false, "Failed to delete the action point.");
+                }
 
-            return true;
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return Fail(false, ex.Message);
+            }
         }
 
-        public async global::System.Threading.Tasks.Task<IEnumerable<ActionPointDto>> GetActiveActionPointsAsync(string UserId, CancellationToken Token)
+        public async Task<ApiResponse<List<ActionPointDto>>> GetActiveActionPointsAsync(string UserId, CancellationToken Token)
         {
             if (!Guid.TryParse(UserId, out var userGuid))
             {
-                return new List<ActionPointDto>();
+                return Fail(new List<ActionPointDto>(), "Invalid user id.");
             }
 
-            return await ActionPointRepository.GetActiveByUserIdAsync(userGuid, Token);
-        }
-
-        public async global::System.Threading.Tasks.Task<IEnumerable<ActionPointDto>> GetByConversationIdAsync(Guid ConversationId, CancellationToken Token)
-        {
-            return await ActionPointRepository.GetByConversationIdAsync(ConversationId, Token);
-        }
-
-        public async global::System.Threading.Tasks.Task<ActionPointDto> GetByIdAsync(Guid ActionPointId, CancellationToken Token)
-        {
-            var result = await ActionPointRepository.GetByIdAsync(ActionPointId, Token);
-            return result ?? new ActionPointDto();
-        }
-
-        public async global::System.Threading.Tasks.Task<ActionPointDto> UpdateActionPointAsync(UpdateActionPointDto UpdatedActionPoint, CancellationToken Token)
-        {
-            UpdatedActionPoint.SubNrId = UserContext.SubNrId ?? Guid.Empty;
-            UpdatedActionPoint.SalesUserId = await ResolveSalesUserIdAsync(UpdatedActionPoint.SalesUserId, Token);
-
-            var result = await ActionPointRepository.UpdateAsync(UpdatedActionPoint, Token);
-            if (!result)
+            try
             {
-                throw new InvalidOperationException("Failed to update the action point.");
+                var results = await ActionPointRepository.GetActiveByUserIdAsync(userGuid, Token);
+                return Ok(results.ToList());
             }
-
-            var updated = await ActionPointRepository.GetByIdAsync(UpdatedActionPoint.ActionPointId, Token);
-            return updated ?? new ActionPointDto();
-        }
-
-        public async global::System.Threading.Tasks.Task<List<UserProfileDto>> GetDelegationUsersAsync(CancellationToken Token)
-        {
-            var subNrId = UserContext.SubNrId ?? Guid.Empty;
-            if (subNrId == Guid.Empty)
+            catch (Exception ex)
             {
-                return new List<UserProfileDto>();
+                return Fail(new List<ActionPointDto>(), ex.Message);
             }
-
-            return await UserRepository.GetUsersBySubNrIdAsync(subNrId, Token);
         }
 
-        private async global::System.Threading.Tasks.Task<Guid> ResolveSalesUserIdAsync(Guid requestedSalesUserId, CancellationToken token)
+        public async Task<ApiResponse<List<ActionPointDto>>> GetByConversationIdAsync(Guid ConversationId, CancellationToken Token)
+        {
+            try
+            {
+                var results = await ActionPointRepository.GetByConversationIdAsync(ConversationId, Token);
+                return Ok(results.ToList());
+            }
+            catch (Exception ex)
+            {
+                return Fail(new List<ActionPointDto>(), ex.Message);
+            }
+        }
+
+        public async Task<ApiResponse<ActionPointDto>> GetByIdAsync(Guid ActionPointId, CancellationToken Token)
+        {
+            try
+            {
+                var result = await ActionPointRepository.GetByIdAsync(ActionPointId, Token);
+                return result is null
+                    ? Fail(new ActionPointDto(), "Action point not found.")
+                    : Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return Fail(new ActionPointDto(), ex.Message);
+            }
+        }
+
+        public async Task<ApiResponse<ActionPointDto>> UpdateActionPointAsync(UpdateActionPointDto UpdatedActionPoint, CancellationToken Token)
+        {
+            try
+            {
+                UpdatedActionPoint.SubNrId = UserContext.SubNrId ?? Guid.Empty;
+                UpdatedActionPoint.SalesUserId = await ResolveSalesUserIdAsync(UpdatedActionPoint.SalesUserId, Token);
+
+                var result = await ActionPointRepository.UpdateAsync(UpdatedActionPoint, Token);
+                if (!result)
+                {
+                    return Fail(new ActionPointDto(), "Failed to update the action point.");
+                }
+
+                var updated = await ActionPointRepository.GetByIdAsync(UpdatedActionPoint.ActionPointId, Token);
+                return updated is null
+                    ? Fail(new ActionPointDto(), "Failed to load the updated action point.")
+                    : Ok(updated);
+            }
+            catch (Exception ex)
+            {
+                return Fail(new ActionPointDto(), ex.Message);
+            }
+        }
+
+        public async Task<ApiResponse<List<UserProfileDto>>> GetDelegationUsersAsync(CancellationToken Token)
+        {
+            try
+            {
+                var subNrId = UserContext.SubNrId ?? Guid.Empty;
+                if (subNrId == Guid.Empty)
+                {
+                    return Ok(new List<UserProfileDto>());
+                }
+
+                var users = await UserRepository.GetUsersBySubNrIdAsync(subNrId, Token);
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                return Fail(new List<UserProfileDto>(), ex.Message);
+            }
+        }
+
+        private async Task<Guid> ResolveSalesUserIdAsync(Guid requestedSalesUserId, CancellationToken token)
         {
             var currentUserId = UserContext.CurrentUserId;
             var subNrId = UserContext.SubNrId ?? Guid.Empty;
@@ -103,5 +162,11 @@ namespace ActivityAssistent.Api.Services.ActionPoints
 
             return requestedSalesUserId;
         }
+
+        private static ApiResponse<T> Ok<T>(T data)
+            => new() { IsSuccess = true, Data = data, ErrorMessage = string.Empty };
+
+        private static ApiResponse<T> Fail<T>(T data, string message)
+            => new() { IsSuccess = false, Data = data, ErrorMessage = message };
     }
 }

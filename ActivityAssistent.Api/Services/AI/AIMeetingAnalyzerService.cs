@@ -80,7 +80,7 @@ namespace ActivityAssistent.Api.Services.AI
                     throw new Exception("Failed to read audio file.");
                 }
                 // todo Status updaten
-                await AiStatusRepository.UpdateStatusAsync(RequestPayload.AudioToken, AiStatus.PreparingAudio);
+                await AiStatusRepository.UpdateStatusAsync(RequestPayload.AudioToken, AiStatus.PreparingAudio, Token);
                 
                 var Transcription = await SpeechRecognitionService.TranscribeAudioAsync(wavBytes, RequestPayload.AudioToken, Token);
                 if (string.IsNullOrWhiteSpace(Transcription))
