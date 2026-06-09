@@ -18,7 +18,7 @@
             <MudAppBar Elevation="1" Color="Color.Surface">
                 <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" Class="mr-2" />
                 <MudText Typo="Typo.h6" Color="Color.Primary">
-                    <MudLink Href="/" Underline="Underline.None" Color="Color.Inherit">
+                    <MudLink OnClick="NavigateToHome" Underline="Underline.None" Color="Color.Inherit" Style="cursor: pointer;">
                         Activity Assistant
                     </MudLink>
                 </MudText>
@@ -44,11 +44,11 @@
                                     </div>
                                     <MudDivider />
 
-                                    <MudMenuItem Icon="@Icons.Material.Filled.Person" Href="/profile">Mijn Profiel</MudMenuItem>
-                                    <MudMenuItem Icon="@Icons.Material.Filled.Dashboard" Href="/">Dashboard</MudMenuItem>
-                                    <MudMenuItem Icon="@Icons.Material.Filled.History" Href="/SalesConversation">Gesprekken</MudMenuItem>
-                                    <MudMenuItem Icon="@Icons.Material.Filled.Summarize" Href="/SalesConversation/Summaries">Summaries</MudMenuItem>
-                                    <MudMenuItem Icon="@Icons.Material.Filled.Settings" Href="/settings">Instellingen</MudMenuItem>
+                                    <MudMenuItem Icon="@Icons.Material.Filled.Person" OnClick="NavigateToProfile">Mijn Profiel</MudMenuItem>
+                                    <MudMenuItem Icon="@Icons.Material.Filled.Dashboard" OnClick="NavigateToHome">Dashboard</MudMenuItem>
+                                    <MudMenuItem Icon="@Icons.Material.Filled.History" OnClick="NavigateToSalesConversations">Gesprekken</MudMenuItem>
+                                    <MudMenuItem Icon="@Icons.Material.Filled.Summarize" OnClick="NavigateToSummaries">Summaries</MudMenuItem>
+                                    <MudMenuItem Icon="@Icons.Material.Filled.Settings" OnClick="NavigateToSettings">Instellingen</MudMenuItem>
                                 </ChildContent>
                             </MudMenu>
 
@@ -76,12 +76,13 @@
 
             <MudDrawer @bind-Open="IsDrawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
                 <MudNavMenu>
-                    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
-                    <MudNavLink Href="/SalesConversation/" Icon="@Icons.Material.Filled.Handshake">Sales conversations</MudNavLink>
-                    <MudNavLink Href="/SalesConversation/Summaries" Icon="@Icons.Material.Filled.Summarize">Summaries</MudNavLink>
+                    <MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard" OnClick="NavigateToHome" Style="cursor: pointer;">Dashboard</MudNavLink>
+                    <MudNavLink Icon="@Icons.Material.Filled.Handshake" OnClick="NavigateToSalesConversations" Style="cursor: pointer;">Sales conversations</MudNavLink>
+                    <MudNavLink Icon="@Icons.Material.Filled.Summarize" OnClick="NavigateToSummaries" Style="cursor: pointer;">Summaries</MudNavLink>
+                    <MudNavLink Icon="@Icons.Material.Filled.CalendarMonth" OnClick="NavigateToCalendar" Style="cursor: pointer;">Agenda</MudNavLink>
                     @if (IsManagerOrAdmin)
                     {
-                        <MudNavLink Href="/management/team-tasks" Icon="@Icons.Material.Filled.SupervisorAccount">Team tasks</MudNavLink>
+                        <MudNavLink Icon="@Icons.Material.Filled.SupervisorAccount" OnClick="NavigateToTeamTasks" Style="cursor: pointer;">Team tasks</MudNavLink>
                     }
                 </MudNavMenu>
             </MudDrawer>
@@ -146,6 +147,20 @@
     {
         IsDrawerOpen = !IsDrawerOpen;
     }
+
+    private void NavigateToHome() => NavigationManager.NavigateTo("/");
+
+    private void NavigateToProfile() => NavigationManager.NavigateTo("/profile");
+
+    private void NavigateToSalesConversations() => NavigationManager.NavigateTo("/SalesConversation");
+
+    private void NavigateToSummaries() => NavigationManager.NavigateTo("/SalesConversation/Summaries");
+
+    private void NavigateToCalendar() => NavigationManager.NavigateTo("/calendar");
+
+    private void NavigateToSettings() => NavigationManager.NavigateTo("/settings");
+
+    private void NavigateToTeamTasks() => NavigationManager.NavigateTo("/management/team-tasks");
 
     private string GetUserInitial(string? FullName)
     {

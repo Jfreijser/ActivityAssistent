@@ -1,5 +1,6 @@
 ﻿using ActivityAssistent.App.Auth;
 using ActivityAssistent.App.Interfaces.ActionPoint;
+using ActivityAssistent.App.Interfaces.Agenda;
 using ActivityAssistent.App.Interfaces.Ai;
 using ActivityAssistent.App.Interfaces.Audio;
 using ActivityAssistent.App.Interfaces.companies;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Logging;
 using MudBlazor.Services;
 using Plugin.Maui.Audio;
+using Radzen;
 namespace ActivityAssistent.App
 {
     public static class MauiProgram
@@ -34,6 +36,7 @@ namespace ActivityAssistent.App
 
             builder.Services.AddAuthorizationCore();
             builder.Services.AddMudServices();
+            builder.Services.AddRadzenComponents();
             Action<HttpClient> ConfigureBackendClient = Client =>
             {
                 // Vergeet niet dat localhost voor een Android emulator straks 10.0.2.2 wordt
@@ -51,7 +54,8 @@ namespace ActivityAssistent.App
             builder.Services.AddHttpClient<IAuthService, MauiAuthService>(ConfigureBackendClient);
             builder.Services.AddHttpClient<IAudioRecorderService, MauiAudioService>(ConfigureBackendClient);
             builder.Services.AddHttpClient<IAiMeetingAnalyzer, MauiAiService>(ConfigureBackendClient);
-            builder.Services.AddScoped<IThemeService, ThemeService>();
+            builder.Services.AddHttpClient<IAgenda, MauiAgendaService>(ConfigureBackendClient);
+            builder.Services.AddScoped<IThemeService, Services.ThemeService>();
             builder.Services.AddScoped<IEmailService, MauiEmailService>();
             return builder.Build();
         }

@@ -19,6 +19,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using ActivityAssistent.Api.Interfaces.Status;
+using ActivityAssistent.Api.Interfaces.Agenda;
+using ActivityAssistent.Api.Services.Agenda;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,6 +70,8 @@ builder.Services.AddScoped<IActionPointService, ActionPointService>();
 builder.Services.AddScoped<IAiMeetingAnalyzerService, AIMeetingAnalyzerService>();
 builder.Services.AddScoped<ISpeechRecognitionService, SpeechRecognitionService>();
 builder.Services.AddScoped<IAiStatusRepository, AiStatusRepository>();
+builder.Services.AddScoped<IAgendaService, AgendaService>();
+builder.Services.AddScoped<IAgendaRepository, AgendaRepository>();
 //builder.Services.AddScoped<ICompanyRepository, DataverseCompanyRepository>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddHttpClient<ISpeechRecognitionService, SpeechRecognitionService>();

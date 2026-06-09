@@ -1,0 +1,204 @@
+@page "/calendar"
+@using ActivityAssistent.App.Interfaces.Agenda
+@using ActivityAssistent.Shared.Dtos.Agenda
+@using System.Globalization
+@using Radzen.Blazor
+@using Radzen
+@using MudBlazor
+
+@inject IAgenda AgendaService
+@inject NavigationManager NavManager
+
+<PageTitle>Calendar - Activity Assistant</PageTitle>
+
+<HeadContent>
+    @if (IsDarkMode)
+    {
+        <link rel="stylesheet" href="_content/Radzen.Blazor/css/dark.css" />
+    }
+    else
+    {
+        <link rel="stylesheet" href="_content/Radzen.Blazor/css/standard.css" />
+    }
+</HeadContent>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-8">
+    <MudText Typo="Typo.h3" GutterBottom="true">Team Calendar</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Default" Class="mb-6">
+        Overview of all action points per sales representative. Click on an action point to open the conversation details.
+    </MudText>
+
+    <MudPaper Elevation="4" Class="pa-4 rounded-lg">
+        @if (IsLoading)
+        {
+            <MudSkeleton Height="700px" Width="100%" />
+        }
+        else
+        {
+            <RadzenScheduler @ref="scheduler"
+                             Data="@CalendarEvents"
+                             TItem="CalendarEvent"
+                             StartProperty="Start"
+                             EndProperty="End"
+                             TextProperty="Title"
+                             Style="height: 700px;"
+                             SelectedIndex="2"
+                             Culture="@EnglishCulture"
+                             AppointmentSelect="OnAppointmentSelect"
+                             AppointmentRender="OnAppointmentRender">
+                <RadzenDayView />
+                <RadzenWeekView />
+                <RadzenMonthView />
+                <RadzenYearView />
+            </RadzenScheduler>
+        }
+    </MudPaper>
+</MudContainer>
+
+<MudDialog @bind-Visible="_isDialogOpen" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Task" Class="mr-2 mb-n1" /> Action Point Preview
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (_selectedEvent != null)
+        {
+            <MudStack Spacing="2" Class="mt-2">
+                <MudText><b>Employee:</b> @_selectedEvent.FullName</MudText>
+                <MudText><b>Task:</b> @_selectedEvent.Description</MudText>
+                <MudText><b>Due Date:</b> @_selectedEvent.Start.ToString("dd MMMM yyyy", EnglishCulture)</MudText>
+
+                <MudStack Row="true" AlignItems="MudBlazor.AlignItems.Center">
+                    <MudText><b>Status:</b></MudText>
+                    <MudChip T="string" Color="@(_selectedEvent.IsCompleted ? Color.Success : Color.Warning)" Size="Size.Small">
+                        @(_selectedEvent.IsCompleted ? "Completed" : "Open")
+                    </MudChip>
+                </MudStack>
+
+                <MudDivider Class="my-2" />
+                <MudText Typo="Typo.body2" Color="Color.Info">
+                    Opening the details will navigate to the full report, showing all action points for this specific conversation.
+                </MudText>
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseDialog" Color="Color.Default">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="MudBlazor.Variant.Filled" OnClick="NavigateToSelectedActionPoint">
+            View All Action Points
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    public bool IsDarkMode { get; set; }
+
+    private bool IsLoading { get; set; } = true;
+    private RadzenScheduler<CalendarEvent> scheduler;
+    private List<CalendarEvent> CalendarEvents { get; set; } = new();
+    private CancellationTokenSource TokenSource { get; set; } = new();
+
+    private bool _isDialogOpen;
+    private CalendarEvent _selectedEvent;
+
+    // FIX: MudBlazor.DialogOptions gebruikt i.p.v. alleen DialogOptions
+    private MudBlazor.DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+
+    private CultureInfo EnglishCulture = new CultureInfo("en-US");
+
+    private Dictionary<Guid, string> UserColors = new();
+    private readonly string[] Palette = new[] {
+        "#1e88e5", "#e53935", "#43a047", "#fb8c00", "#8e24aa", "#3949ab", "#00897b"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAgendaPointsAsync();
+    }
+
+    private async Task LoadAgendaPointsAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            var rawAgendaData = await AgendaService.GetSchedulerPointsAsync(TokenSource.Token);
+
+            CalendarEvents = rawAgendaData.SelectMany(user => user.ActionPoints.Select(ap => new CalendarEvent
+            {
+                Start = ap.DueDate,
+                End = ap.DueDate.AddHours(1),
+                Title = $"{user.FullName} - {ap.Description}",
+                FullName = user.FullName,
+                Description = ap.Description,
+                ConversationId = ap.ConversationId,
+                UserId = user.UserId,
+                IsCompleted = ap.IsCompleted
+            })).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading agenda: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void OnAppointmentSelect(SchedulerAppointmentSelectEventArgs<CalendarEvent> args)
+    {
+        _selectedEvent = args.Data;
+        _isDialogOpen = true;
+    }
+
+    private void CloseDialog()
+    {
+        _isDialogOpen = false;
+        _selectedEvent = null;
+    }
+
+    private void NavigateToSelectedActionPoint()
+    {
+        if (_selectedEvent != null)
+        {
+            NavManager.NavigateTo($"/SalesConversation/{_selectedEvent.ConversationId}/ActionPoints");
+        }
+    }
+
+    private void OnAppointmentRender(SchedulerAppointmentRenderEventArgs<CalendarEvent> args)
+    {
+        if (args.Data.IsCompleted)
+        {
+            args.Attributes["style"] = "background-color: #9e9e9e; text-decoration: line-through;";
+            return;
+        }
+
+        if (!UserColors.TryGetValue(args.Data.UserId, out var color))
+        {
+            color = Palette[UserColors.Count % Palette.Length];
+            UserColors[args.Data.UserId] = color;
+        }
+
+        args.Attributes["style"] = $"background-color: {color};";
+    }
+
+    public void Dispose()
+    {
+        TokenSource.Cancel();
+        TokenSource.Dispose();
+    }
+
+    public class CalendarEvent
+    {
+        public DateTime Start { get; set; }
+        public DateTime End { get; set; }
+        public string Title { get; set; }
+        public string FullName { get; set; }
+        public string Description { get; set; }
+        public Guid ConversationId { get; set; }
+        public Guid UserId { get; set; }
+        public bool IsCompleted { get; set; }
+    }
+}
