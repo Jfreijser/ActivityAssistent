@@ -1,6 +1,7 @@
 using ActivityAssistent.Api.Interfaces.ActionPoint;
 using ActivityAssistent.Shared.Dtos.ActionPoints;
 using Dapper;
+using Microsoft.Data.SqlClient;
 
 namespace ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository
 {
@@ -15,6 +16,21 @@ namespace ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository
             using (var db = connection.CreateConnection())
             {
                 var command = new CommandDefinition(sql, ActionPoint, cancellationToken: Token);
+                return await db.QuerySingleAsync<Guid>(command);
+            }
+        }
+
+        public async Task<Guid> CreateResolutionAsync(CreateActionPointResolutionDto Resolution, CancellationToken Token)
+        {
+            var sql = @"UPDATE ActionPoints SET IsCompleted = 1 WHERE ActionPointId = @ActionPointId;
+
+                        INSERT INTO ActionPointResolutions (ActionPointId, ResolvedByUserId, ClosureReason)
+                        OUTPUT INSERTED.ResolutionId
+                        VALUES (@ActionPointId, @ResolvedByUserId, @ClosureReason);";
+
+            using (var db = connection.CreateConnection())
+            {
+                var command = new CommandDefinition(sql, Resolution, cancellationToken: Token);
                 return await db.QuerySingleAsync<Guid>(command);
             }
         }
@@ -65,6 +81,33 @@ namespace ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository
                 return await db.QueryFirstOrDefaultAsync<ActionPointDto>(command);
             }
         }
+        public async Task<ActionPointResolutionsDto?> GetResolutionByIdAsync(Guid ResolutionId, CancellationToken Token)
+        {
+            var sql = @"SELECT r.ResolutionId, r.ActionPointId, r.ResolvedByUserId, r.ClosureReason, r.ResolvedAt, u.FullName AS ResolvedByFullName FROM ActionPointResolutions r 
+                        INNER JOIN Users u ON r.ResolvedByUserId = u.UserId
+                        WHERE r.ResolutionId = @ResolutionId;";
+
+            using (var db = connection.CreateConnection())
+            {
+                var command = new CommandDefinition(sql, new { ResolutionId }, cancellationToken: Token);
+                return await db.QuerySingleOrDefaultAsync<ActionPointResolutionsDto>(command);
+            }
+        }
+
+        public async Task<IEnumerable<ActionPointResolutionsDto>> GetResolutionsByActionPointIdAsync(Guid ActionPointId, CancellationToken Token)
+        {
+            var sql = @"SELECT r.ResolutionId, r.ActionPointId, r.ResolvedByUserId, r.ClosureReason, r.ResolvedAt, u.FullName AS ResolvedByFullName FROM ActionPointResolutions r
+                        INNER JOIN Users u ON r.ResolvedByUserId = u.UserId
+                        WHERE r.ActionPointId = @ActionPointId
+                        ORDER BY r.ResolvedAt DESC;";
+
+            using (var db = connection.CreateConnection())
+            {
+                var command = new CommandDefinition(sql, new { ActionPointId }, cancellationToken: Token);
+                return await db.QueryAsync<ActionPointResolutionsDto>(command);
+            }
+        }
+        
 
         public async Task<bool> UpdateAsync(UpdateActionPointDto ActionPoint, CancellationToken Token)
         {

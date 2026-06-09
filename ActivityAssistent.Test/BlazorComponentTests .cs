@@ -153,7 +153,7 @@ public class BlazorComponentTests
     }
 
     [Fact]
-    public async Task ActionPointsPage_ToggleCompleted_UpdatesStatus()
+    public async Task ActionPointsPage_SaveActionPoint_RefreshesList()
     {
         var conversationId = Guid.NewGuid();
         var actionPoint = new ActionPointDto
@@ -188,8 +188,8 @@ public class BlazorComponentTests
 
         doneButton.Find("button").Click();
 
-        // Geeft Blazor de tijd om de statusverandering asynchroon te verwerken
-        component.WaitForAssertion(() => Assert.Contains("Voltooid", component.Markup));
+        // Give Blazor time to process the async save and refresh
+        component.WaitForAssertion(() => Assert.Contains("Completed", component.Markup));
     }
 
     private sealed class FakeAudioRecorderService : IAudioRecorderService
@@ -265,6 +265,16 @@ public class BlazorComponentTests
         public Task<List<UserProfileDto>> GetDelegationUsersAsync(CancellationToken Token)
         {
             return Task.FromResult(new List<UserProfileDto> { _userProfile });
+        }
+
+        public Task<ActionPointResolutionsDto> ResolveActionPointAsync(CreateActionPointResolutionDto Resolution, CancellationToken Token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<ActionPointResolutionsDto>> GetActionPointResolutionsAsync(Guid ActionPointId, CancellationToken Token)
+        {
+            throw new NotImplementedException();
         }
     }
 }

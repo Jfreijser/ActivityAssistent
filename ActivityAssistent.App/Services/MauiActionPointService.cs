@@ -175,5 +175,46 @@ namespace ActivityAssistent.App.Services
                 throw;
             }
         }
+
+        public async Task<ActionPointResolutionsDto> ResolveActionPointAsync(CreateActionPointResolutionDto Resolution, CancellationToken Token)
+        {
+            try
+            {
+                var response = await PostAsync<ApiResponse<ActionPointResolutionsDto>>("api/ActionPoint/CreateResolution", Resolution, Token);
+
+                if (response != null && response.IsSuccess && response.Data != null)
+                {
+                    return response.Data;
+                }
+
+                return new ActionPointResolutionsDto();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[API FOUT] Opslaan van afsluitreden mislukt: {ex.Message}");
+                return new ActionPointResolutionsDto();
+            }
+        }
+
+        public async Task<List<ActionPointResolutionsDto>> GetActionPointResolutionsAsync(Guid ActionPointId, CancellationToken Token)
+        {
+            try
+            {
+                // Let op: controleer of deze route exact overeenkomt met je API Controller
+                var response = await GetAsync<ApiResponse<List<ActionPointResolutionsDto>>>($"api/ActionPoint/GetResolutions/{ActionPointId}", Token);
+
+                if (response == null || !response.IsSuccess)
+                {
+                    throw new HttpRequestException($"Error fetching resolutions: {response?.ErrorMessage}");
+                }
+
+                return response.Data ?? new List<ActionPointResolutionsDto>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[API FOUT] Ophalen van afsluitredenen mislukt: {ex.Message}");
+                throw new Exception("Failed to fetch action point resolutions.");
+            }
+        }
     }
 }

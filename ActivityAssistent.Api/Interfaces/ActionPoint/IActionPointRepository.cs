@@ -10,5 +10,8 @@ namespace ActivityAssistent.Api.Interfaces.ActionPoint
         Task<Guid> CreateAsync(CreateActionPointDto ActionPoint, CancellationToken Token);
         Task<bool> UpdateAsync(UpdateActionPointDto ActionPoint, CancellationToken Token);
         Task<bool> DeleteAsync(Guid ActionPointId, CancellationToken Token);
+        Task<Guid> CreateResolutionAsync(CreateActionPointResolutionDto Resolution, CancellationToken Token);
+        Task<ActionPointResolutionsDto?> GetResolutionByIdAsync(Guid ResolutionId, CancellationToken Token);
+        Task<IEnumerable<ActionPointResolutionsDto>> GetResolutionsByActionPointIdAsync(Guid ActionPointId, CancellationToken Token);
     }
 }

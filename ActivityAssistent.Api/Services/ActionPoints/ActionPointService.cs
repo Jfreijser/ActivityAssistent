@@ -168,5 +168,59 @@ namespace ActivityAssistent.Api.Services.ActionPoints
 
         private static ApiResponse<T> Fail<T>(T data, string message)
             => new() { IsSuccess = false, Data = data, ErrorMessage = message };
+
+        public async Task<ApiResponse<ActionPointResolutionsDto>> CreateActionPointResolutionAsync(CreateActionPointResolutionDto Resolution, CancellationToken Token)
+        {
+            try
+            {
+                if (Resolution.ActionPointId == Guid.Empty)
+                {
+                    return Fail(new ActionPointResolutionsDto(), "Invalid ActionPoint ID.");
+                }
+
+                if (string.IsNullOrWhiteSpace(Resolution.ClosureReason))
+                {
+                    return Fail(new ActionPointResolutionsDto(), "A closure reason is required.");
+                }
+
+                Resolution.ResolvedByUserId = UserContext.CurrentUserId;
+
+                var createdId = await ActionPointRepository.CreateResolutionAsync(Resolution, Token);
+                if (createdId == Guid.Empty)
+                {
+                    return Fail(new ActionPointResolutionsDto(), "Failed to create the resolution.");
+                }
+
+                var created = await ActionPointRepository.GetResolutionByIdAsync(createdId, Token);
+                return created is null
+                    ? Fail(new ActionPointResolutionsDto(), "Failed to load the created resolution.")
+                    : Ok(created);
+            }
+            catch (Exception ex)
+            {
+                return Fail(new ActionPointResolutionsDto(), ex.Message);
+            }
+        }
+
+        public async Task<ApiResponse<List<ActionPointResolutionsDto>>> GetActionPointResolutionsAsync(Guid ActionPointId, CancellationToken Token)
+        {
+            try
+            {
+                if (ActionPointId == Guid.Empty)
+                {
+                    return Fail(new List<ActionPointResolutionsDto>(), "Invalid ActionPoint ID.");
+                }
+
+                var results = await ActionPointRepository.GetResolutionsByActionPointIdAsync(ActionPointId, Token);
+
+                return results is null
+                    ? Ok(new List<ActionPointResolutionsDto>())
+                    : Ok(results.ToList());
+            }
+            catch (Exception ex)
+            {
+                return Fail(new List<ActionPointResolutionsDto>(), ex.Message);
+            }
+        }
     }
 }

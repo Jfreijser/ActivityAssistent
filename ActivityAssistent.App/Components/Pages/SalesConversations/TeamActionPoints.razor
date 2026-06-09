@@ -15,18 +15,18 @@
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
 	<MudGrid Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
 		<MudItem>
-			<MudText Typo="Typo.h4" Color="Color.Primary">Teamactiepunten</MudText>
+			<MudText Typo="Typo.h4" Color="Color.Primary">Team action points</MudText>
 			<MudText Typo="Typo.body2" Color="Color.Secondary">
-				Overzicht van taken en statussen van het team.
+				Overview of the team's tasks and statuses.
 			</MudText>
 		</MudItem>
 		<MudItem>
 			<MudStack Row="true" Spacing="2">
 				<MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateDialog">
-					Nieuw teamactiepunt
+					New team action point
 				</MudButton>
 				<MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.ArrowBack" OnClick="NavigateBack">
-					Terug naar gesprekken
+					Back to conversations
 				</MudButton>
 			</MudStack>
 		</MudItem>
@@ -37,35 +37,41 @@
 		{
 			<div class="d-flex justify-center align-center pa-12">
 				<MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
-				<MudText Class="ml-4">Actiepunten laden...</MudText>
+				<MudText Class="ml-4">Loading action points...</MudText>
 			</div>
 		}
 		else
 		{
 			<MudTable Items="ActionPointItems" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
 				<HeaderContent>
-					<MudTh>Gesprek</MudTh>
-					<MudTh>Omschrijving</MudTh>
-					<MudTh>Vervaldatum</MudTh>
+					<MudTh>Conversation</MudTh>
+					<MudTh>Description</MudTh>
+					<MudTh>Due date</MudTh>
 					<MudTh>Status</MudTh>
-					<MudTh>Medewerker</MudTh>
-					<MudTh Style="text-align: right;">Acties</MudTh>
+					<MudTh>Employee</MudTh>
+					<MudTh Style="text-align: right;">Actions</MudTh>
 				</HeaderContent>
 				<RowTemplate>
-					<MudTd DataLabel="Gesprek">@GetConversationTitle(context.ConversationId)</MudTd>
-					<MudTd DataLabel="Omschrijving">@context.Description</MudTd>
-					<MudTd DataLabel="Vervaldatum">@context.DueDate.ToString("dd-MM-yyyy")</MudTd>
+					<MudTd DataLabel="Conversation">@GetConversationTitle(context.ConversationId)</MudTd>
+					<MudTd DataLabel="Description">@context.Description</MudTd>
+					<MudTd DataLabel="Due date">@context.DueDate.ToString("dd-MM-yyyy")</MudTd>
 					<MudTd DataLabel="Status">
 						<MudChip T="string" Color="@(context.IsCompleted ? Color.Success : Color.Warning)" Size="Size.Small">
-							@(context.IsCompleted ? "Voltooid" : "Open")
+							@(context.IsCompleted ? "Completed" : "Open")
 						</MudChip>
 					</MudTd>
-					<MudTd DataLabel="Medewerker">@GetUserName(context.SalesUserId)</MudTd>
-					<MudTd DataLabel="Acties" Style="text-align: right;">
+					<MudTd DataLabel="Employee">@GetUserName(context.SalesUserId)</MudTd>
+					<MudTd DataLabel="Actions" Style="text-align: right;">
 						<MudIconButton Icon="@Icons.Material.Filled.Done"
 								 Color="Color.Success"
 								 Size="Size.Small"
-								 OnClick="() => ToggleCompleted(context)" />
+								 Title="Resolve"
+								 OnClick="() => OpenResolveDialog(context)" />
+						<MudIconButton Icon="@Icons.Material.Filled.History"
+								 Color="Color.Info"
+								 Size="Size.Small"
+								 Title="Resolution history"
+								 OnClick="() => OpenHistoryDialog(context)" />
 						<MudIconButton Icon="@Icons.Material.Filled.Edit"
 								 Color="Color.Primary"
 								 Size="Size.Small"
@@ -77,7 +83,7 @@
 					</MudTd>
 				</RowTemplate>
 				<NoRecordsContent>
-					<MudText Class="pa-4">Geen actiepunten gevonden.</MudText>
+					<MudText Class="pa-4">No action points found.</MudText>
 				</NoRecordsContent>
 			</MudTable>
 		}
@@ -128,7 +134,7 @@
 		catch (Exception ex)
 		{
 			Console.WriteLine($"Fout bij laden medewerkers: {ex.Message}");
-			Snackbar.Add("Fout bij het laden van medewerkers.", Severity.Error);
+			Snackbar.Add("Error while loading co-workers.", Severity.Error);
 		}
 	}
 
@@ -142,7 +148,7 @@
 		catch (Exception ex)
 		{
 			Console.WriteLine($"Fout bij laden gesprekken: {ex.Message}");
-			Snackbar.Add("Fout bij het laden van gesprekken.", Severity.Error);
+			Snackbar.Add("Error while loading conversations.", Severity.Error);
 		}
 	}
 
@@ -158,7 +164,7 @@
 		catch (Exception ex)
 		{
 			Console.WriteLine($"Fout bij laden actiepunten: {ex.Message}");
-			Snackbar.Add("Fout bij het laden van de actiepunten.", Severity.Error);
+			Snackbar.Add("Error while loading action points.", Severity.Error);
 		}
 		finally
 		{
@@ -204,7 +210,7 @@
 		};
 
 		var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-		var title = existingActionPoint == null ? "Nieuw teamactiepunt" : "Teamactiepunt bewerken";
+		var title = existingActionPoint == null ? "New team action point" : "Edit team action point";
 		var dialog = await DialogService.ShowAsync<global::ActivityAssistent.App.Components.Pages.SalesConversations.TeamActionPointDialog>(title, parameters, options);
 		var result = await dialog.Result;
 
@@ -222,7 +228,7 @@
 		{
 			if (model.ConversationId == Guid.Empty)
 			{
-				Snackbar.Add("Selecteer eerst een gesprek.", Severity.Warning);
+				Snackbar.Add("Please select a conversation first.", Severity.Warning);
 				return;
 			}
 
@@ -246,12 +252,11 @@
 				};
 
 				var updated = await ActionPointService.UpdateActionPointAsync(updateDto, TokenSource.Token);
-				var index = ActionPointItems.FindIndex(x => x.ActionPointId == updated.ActionPointId);
-				if (index >= 0)
+				if (updated.ActionPointId != Guid.Empty)
 				{
-					ActionPointItems[index] = updated;
+					await LoadActionPointsAsync();
 				}
-				Snackbar.Add("Actiepunt bijgewerkt.", Severity.Success);
+				Snackbar.Add("Action point updated.", Severity.Success);
 			}
 			else
 			{
@@ -268,46 +273,51 @@
 				var created = await ActionPointService.CreateActionPointAsync(createDto, TokenSource.Token);
 				if (created.ActionPointId != Guid.Empty)
 				{
-					ActionPointItems.Add(created);
-					Snackbar.Add("Actiepunt toegevoegd.", Severity.Success);
+					await LoadActionPointsAsync();
+					Snackbar.Add("Action point added.", Severity.Success);
 				}
 			}
 		}
 		catch (Exception ex)
 		{
 			Console.WriteLine($"Fout bij opslaan actiepunt: {ex.Message}");
-			Snackbar.Add("Fout bij het opslaan van het actiepunt.", Severity.Error);
+			Snackbar.Add("Error while saving action point.", Severity.Error);
 		}
 	}
 
-	private async Task ToggleCompleted(ActionPointDto actionPoint)
+	private async Task OpenResolveDialog(ActionPointDto actionPoint)
 	{
-		var salesUserId = actionPoint.SalesUserId;
-		var subNrId = UserProfile?.SubNrId ?? Guid.Empty;
-		var updateDto = new UpdateActionPointDto
+		var parameters = new DialogParameters
 		{
-			ActionPointId = actionPoint.ActionPointId,
-			ConversationId = actionPoint.ConversationId,
-			Description = actionPoint.Description,
-			SalesUserId = salesUserId,
-			DueDate = actionPoint.DueDate,
-			IsCompleted = !actionPoint.IsCompleted,
-			SubNrId = subNrId
+			["Model"] = new CreateActionPointResolutionDto { ActionPointId = actionPoint.ActionPointId }
 		};
+
+		var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+			var dialog = await DialogService.ShowAsync<ActionPointResolutionDialog>("Resolve action point", parameters, options);
+		var result = await dialog.Result;
+
+		if (result.Canceled || result.Data is not CreateActionPointResolutionDto resolution)
+		{
+			return;
+		}
 
 		try
 		{
-			var updated = await ActionPointService.UpdateActionPointAsync(updateDto, TokenSource.Token);
-			var index = ActionPointItems.FindIndex(x => x.ActionPointId == updated.ActionPointId);
-			if (index >= 0)
+			var created = await ActionPointService.ResolveActionPointAsync(resolution, TokenSource.Token);
+			if (created.ResolutionId != Guid.Empty)
 			{
-				ActionPointItems[index] = updated;
+				await LoadActionPointsAsync();
+				Snackbar.Add("Action point resolved.", Severity.Success);
+			}
+			else
+			{
+				Snackbar.Add("Action point could not be resolved.", Severity.Warning);
 			}
 		}
 		catch (Exception ex)
 		{
-			Console.WriteLine($"Fout bij updaten status: {ex.Message}");
-			Snackbar.Add("Fout bij het updaten van de status.", Severity.Error);
+			Console.WriteLine($"Error while resolving action point: {ex.Message}");
+			Snackbar.Add("Error while resolving action point.", Severity.Error);
 		}
 	}
 
@@ -319,18 +329,29 @@
 			if (result)
 			{
 				ActionPointItems.Remove(actionPoint);
-				Snackbar.Add("Actiepunt verwijderd.", Severity.Success);
+				Snackbar.Add("Action point deleted.", Severity.Success);
 			}
 			else
 			{
-				Snackbar.Add("Actiepunt kon niet worden verwijderd.", Severity.Warning);
+				Snackbar.Add("Action point could not be deleted.", Severity.Warning);
 			}
 		}
 		catch (Exception ex)
 		{
-			Console.WriteLine($"Fout bij verwijderen: {ex.Message}");
-			Snackbar.Add("Fout bij het verwijderen van het actiepunt.", Severity.Error);
+			Console.WriteLine($"Error while deleting action point: {ex.Message}");
+			Snackbar.Add("Error while deleting action point.", Severity.Error);
 		}
+	}
+
+	private async Task OpenHistoryDialog(ActionPointDto actionPoint)
+	{
+		var parameters = new DialogParameters
+		{
+			["ActionPointId"] = actionPoint.ActionPointId
+		};
+
+		var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+		await DialogService.ShowAsync<global::ActivityAssistent.App.Components.Pages.SalesConversations.ActionPointResolutionHistoryDialog>("Resolution history", parameters, options);
 	}
 
 

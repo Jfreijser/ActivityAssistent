@@ -66,5 +66,21 @@ namespace ActivityAssistent.Api.Controllers
             var response = await ActionPointService.DeleteActionPointAsync(actionPointId, Token);
             return response.IsSuccess ? Ok(response) : BadRequest(response);
         }
+
+        [HttpPost("CreateResolution")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<ActionPointResolutionsDto>>> CreateResolutionAsync(CreateActionPointResolutionDto Resolution, CancellationToken Token)
+        {
+            var response = await ActionPointService.CreateActionPointResolutionAsync(Resolution, Token);
+            return response.IsSuccess ? Ok(response) : BadRequest(response);
+        }
+
+        [HttpGet("GetResolutions/{ActionPointId}")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<List<ActionPointResolutionsDto>>>> GetResolutionsAsync(Guid ActionPointId, CancellationToken Token)
+        {
+            var response = await ActionPointService.GetActionPointResolutionsAsync(ActionPointId, Token);
+            return response.IsSuccess ? Ok(response) : BadRequest(response);
+        }
     }
 }

@@ -11,9 +11,9 @@
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
 	<MudGrid Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
 		<MudItem>
-			<MudText Typo="Typo.h4" Color="Color.Primary">Actiepunten</MudText>
+			<MudText Typo="Typo.h4" Color="Color.Primary">Action points</MudText>
 			<MudText Typo="Typo.body2" Color="Color.Secondary">
-				Beheer de actiepunten van dit gesprek.
+				Manage the action points for this conversation.
 			</MudText>
 		</MudItem>
 		<MudItem>
@@ -24,35 +24,35 @@
 	</MudGrid>
 
 	<MudPaper Elevation="2" Class="pa-4 mb-6">
-		<MudText Typo="Typo.subtitle1">@FormTitle</MudText>
+			<MudText Typo="Typo.subtitle1">@FormTitle</MudText>
 		<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-			Vul de gegevens in en sla het actiepunt op.
+				Fill in the details and save the action point.
 		</MudText>
 
 		<MudForm @ref="Form" @bind-IsValid="IsFormValid">
 			<MudGrid Spacing="3">
 				<MudItem xs="12">
 					<MudTextField T="string"
-								Label="Omschrijving"
+						Label="Description"
 								Required="true"
-								RequiredError="Omschrijving is verplicht"
+								RequiredError="Description is required"
 								Variant="Variant.Outlined"
 								@bind-Value="Description" />
 				</MudItem>
 				<MudItem xs="12" sm="6">
-					<MudDatePicker Label="Vervaldatum"
+						<MudDatePicker Label="Due date"
 								   @bind-Date="DueDate"
 								   Variant="Variant.Outlined"
 								   Editable="true" />
 				</MudItem>
 				<MudItem xs="12" sm="6">
 					<MudSelect T="Guid"
-							   Label="Toewijzen aan"
+						Label="Assign to"
 							   Required="true"
 							   RequiredError="Selecteer een medewerker"
 							   Variant="Variant.Outlined"
 							   @bind-Value="SelectedSalesUserId">
-						<MudSelectItem Value="@(Guid.Empty)">-- Selecteer een medewerker --</MudSelectItem>
+						<MudSelectItem Value="@(Guid.Empty)">-- Select a team member --</MudSelectItem>
 						@foreach (var user in DelegationUsers)
 						{
 							<MudSelectItem Value="@user.UserId">@user.FullName</MudSelectItem>
@@ -66,14 +66,14 @@
 					@if (IsEditMode)
 					{
 						<MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CancelEdit" Class="mr-2">
-							Annuleren
+							Cancel
 						</MudButton>
 					}
 					<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveActionPoint" Disabled="@(!IsFormValid || IsSaving)">
 						@if (IsSaving)
 						{
 							<MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-							<MudText Class="ms-2">Opslaan...</MudText>
+						<MudText Class="ms-2">Saving...</MudText>
 						}
 						else
 						{
@@ -90,29 +90,29 @@
 		{
 			<div class="d-flex justify-center align-center pa-12">
 				<MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
-				<MudText Class="ml-4">Actiepunten laden...</MudText>
+				<MudText Class="ml-4">Loading action points...</MudText>
 			</div>
 		}
 		else
 		{
 			<MudTable Items="ActionPointItems" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
 				<HeaderContent>
-					<MudTh>Omschrijving</MudTh>
-					<MudTh>Vervaldatum</MudTh>
+					<MudTh>Description</MudTh>
+					<MudTh>Due date</MudTh>
 					<MudTh>Status</MudTh>
-					<MudTh>Medewerker</MudTh>
-					<MudTh Style="text-align: right;">Acties</MudTh>
+					<MudTh>Employee</MudTh>
+					<MudTh Style="text-align: right;">Actions</MudTh>
 				</HeaderContent>
 				<RowTemplate>
-					<MudTd DataLabel="Omschrijving">@context.Description</MudTd>
-					<MudTd DataLabel="Vervaldatum">@context.DueDate.ToString("dd-MM-yyyy")</MudTd>
+					<MudTd DataLabel="Description">@context.Description</MudTd>
+					<MudTd DataLabel="Due date">@context.DueDate.ToString("dd-MM-yyyy")</MudTd>
 					<MudTd DataLabel="Status">
 						<MudChip T="string" Color="@(context.IsCompleted ? Color.Success : Color.Warning)" Size="Size.Small">
-							@(context.IsCompleted ? "Voltooid" : "Open")
+							@(context.IsCompleted ? "Completed" : "Open")
 						</MudChip>
 					</MudTd>
-					<MudTd DataLabel="Medewerker">@GetUserName(context.SalesUserId)</MudTd>
-					<MudTd DataLabel="Acties" Style="text-align: right;">
+					<MudTd DataLabel="Employee">@GetUserName(context.SalesUserId)</MudTd>
+					<MudTd DataLabel="Actions" Style="text-align: right;">
 						<MudIconButton Icon="@Icons.Material.Filled.Done"
 									 Color="Color.Success"
 									 Size="Size.Small"
@@ -233,10 +233,9 @@
 				};
 
 				var updated = await ActionPointService.UpdateActionPointAsync(updateDto, TokenSource.Token);
-				var index = ActionPointItems.FindIndex(x => x.ActionPointId == updated.ActionPointId);
-				if (index >= 0)
+			if (updated.ActionPointId != Guid.Empty)
 				{
-					ActionPointItems[index] = updated;
+				await LoadActionPointsAsync();
 				}
 				Snackbar.Add("Actiepunt bijgewerkt.", Severity.Success);
 			}
@@ -255,7 +254,7 @@
 				var created = await ActionPointService.CreateActionPointAsync(createDto, TokenSource.Token);
 				if (created.ActionPointId != Guid.Empty)
 				{
-					ActionPointItems.Add(created);
+				await LoadActionPointsAsync();
 					Snackbar.Add("Actiepunt toegevoegd.", Severity.Success);
 				}
 			}
@@ -301,10 +300,9 @@
 		try
 		{
 			var updated = await ActionPointService.UpdateActionPointAsync(updateDto, TokenSource.Token);
-			var index = ActionPointItems.FindIndex(x => x.ActionPointId == updated.ActionPointId);
-			if (index >= 0)
+			if (updated.ActionPointId != Guid.Empty)
 			{
-				ActionPointItems[index] = updated;
+				await LoadActionPointsAsync();
 			}
 		}
 		catch (Exception ex)

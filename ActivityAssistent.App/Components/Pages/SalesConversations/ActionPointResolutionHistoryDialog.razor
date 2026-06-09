@@ -1,0 +1,94 @@
+@using MudBlazor
+@using ActivityAssistent.App.Interfaces.ActionPoint
+@using ActivityAssistent.Shared.Dtos.ActionPoints
+@inject IActionPointService ActionPointService
+
+<MudDialog>
+	<DialogContent>
+		<MudStack Spacing="2" Class="pa-2">
+			<div>
+				<MudText Typo="Typo.h6">Resolution history</MudText>
+				<MudText Typo="Typo.body2" Color="Color.Secondary">
+					Review the latest closure reason and previous resolutions for this action point.
+				</MudText>
+			</div>
+
+			@if (IsLoading)
+			{
+				<div class="d-flex justify-center align-center pa-8">
+					<MudProgressCircular Color="Color.Primary" Size="Size.Medium" Indeterminate="true" />
+					<MudText Class="ml-3">Loading history...</MudText>
+				</div>
+			}
+			else if (Resolutions.Count == 0)
+			{
+				<MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+					No resolution history found for this action point.
+				</MudAlert>
+			}
+			else
+			{
+				<MudAlert Severity="Severity.Success" Variant="Variant.Filled">
+					<MudText Typo="Typo.subtitle2">Latest closure reason</MudText>
+					<MudText>@Resolutions[0].ClosureReason</MudText>
+				</MudAlert>
+
+				<MudTable Items="Resolutions" Hover="true" Dense="true" Elevation="0">
+					<HeaderContent>
+						<MudTh>Resolved at</MudTh>
+						<MudTh>Resolved by</MudTh>
+						<MudTh>Closure reason</MudTh>
+					</HeaderContent>
+					<RowTemplate>
+						<MudTd DataLabel="Resolved at">@context.ResolvedAt.ToString("dd-MM-yyyy HH:mm")</MudTd>
+						<MudTd DataLabel="Resolved by">@context.ResolvedByFullName</MudTd>
+						<MudTd DataLabel="Closure reason">@context.ClosureReason</MudTd>
+					</RowTemplate>
+				</MudTable>
+			}
+
+			<div class="d-flex justify-end mt-2">
+				<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Close">
+					Close
+				</MudButton>
+			</div>
+		</MudStack>
+	</DialogContent>
+</MudDialog>
+
+@code {
+	[CascadingParameter]
+	private IMudDialogInstance MudDialog { get; set; } = default!;
+
+	[Parameter]
+	public Guid ActionPointId { get; set; }
+
+	private bool IsLoading;
+	private List<ActionPointResolutionsDto> Resolutions = new();
+
+	protected override async Task OnInitializedAsync()
+	{
+		IsLoading = true;
+		try
+		{
+			var result = await ActionPointService.GetActionPointResolutionsAsync(ActionPointId, CancellationToken.None);
+			Resolutions = result
+				.OrderByDescending(x => x.ResolvedAt)
+				.ToList();
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Error while loading resolution history: {ex.Message}");
+			Resolutions = new List<ActionPointResolutionsDto>();
+		}
+		finally
+		{
+			IsLoading = false;
+		}
+	}
+
+	private void Close()
+	{
+		MudDialog.Cancel();
+	}
+}

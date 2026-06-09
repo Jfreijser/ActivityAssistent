@@ -1,0 +1,68 @@
+@using MudBlazor
+@using ActivityAssistent.Shared.Dtos.ActionPoints
+
+<MudDialog>
+	<DialogContent>
+		<MudForm @ref="Form" @bind-IsValid="IsFormValid">
+			<MudGrid Spacing="3" Class="pa-2">
+				<MudItem xs="12">
+					<MudText Typo="Typo.h6">Resolve action point</MudText>
+					<MudText Typo="Typo.body2" Color="Color.Secondary">
+						Provide a short reason for resolving this action point.
+					</MudText>
+				</MudItem>
+
+				<MudItem xs="12">
+					<MudTextField T="string"
+									Label="Closure reason"
+								  Required="true"
+								  RequiredError="Closure reason is required"
+								  Variant="Variant.Outlined"
+								  Lines="4"
+								  AutoGrow="true"
+								  @bind-Value="ClosureReason" />
+				</MudItem>
+			</MudGrid>
+
+			<div class="d-flex justify-end mt-4">
+				<MudButton OnClick="Cancel" Color="Color.Default" Class="mr-2">Cancel</MudButton>
+				<MudButton ButtonType="ButtonType.Button" Color="Color.Primary" Variant="Variant.Filled" OnClick="Save">
+					Save
+				</MudButton>
+			</div>
+		</MudForm>
+	</DialogContent>
+</MudDialog>
+
+@code {
+	[CascadingParameter]
+	private IMudDialogInstance MudDialog { get; set; } = default!;
+
+	[Parameter]
+	public CreateActionPointResolutionDto Model { get; set; } = new();
+
+	private MudForm Form = default!;
+	private bool IsFormValid;
+
+	private string ClosureReason
+	{
+		get => Model.ClosureReason;
+		set => Model.ClosureReason = value;
+	}
+
+	private async Task Save()
+	{
+		await Form.Validate();
+		if (!IsFormValid)
+		{
+			return;
+		}
+
+		MudDialog.Close(DialogResult.Ok(Model));
+	}
+
+	private void Cancel()
+	{
+		MudDialog.Cancel();
+	}
+}

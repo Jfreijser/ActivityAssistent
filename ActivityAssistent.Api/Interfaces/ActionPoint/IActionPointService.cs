@@ -16,5 +16,8 @@ namespace ActivityAssistent.Api.Interfaces.ActionPoint
         Task<ApiResponse<List<ActionPointDto>>> GetActiveActionPointsAsync(string UserId, CancellationToken Token);
         Task<ApiResponse<List<ActionPointDto>>> GetByConversationIdAsync(Guid ConversationId, CancellationToken Token);
         Task<ApiResponse<List<UserProfileDto>>> GetDelegationUsersAsync(CancellationToken Token);
+        Task<ApiResponse<ActionPointResolutionsDto>> CreateActionPointResolutionAsync(CreateActionPointResolutionDto Resolution, CancellationToken Token);
+        Task<ApiResponse<List<ActionPointResolutionsDto>>> GetActionPointResolutionsAsync(Guid ActionPointId, CancellationToken Token);
+
     }
 }

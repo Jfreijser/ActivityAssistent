@@ -44,7 +44,10 @@
                 </MudItem>
 
                 <MudItem xs="12" sm="6" Class="d-flex align-center">
-                    <MudCheckBox T="bool" Label="Completed" @bind-Checked="Model.IsCompleted" />
+                    <MudCheckBox T="bool"
+                                 Label="Completed"
+                                 Checked="Model.IsCompleted"
+                                 CheckedChanged="OnCompletedChanged" />
                 </MudItem>
             </MudGrid>
 
@@ -90,5 +93,10 @@
     private void OnSelectedSalesUserIdChanged(Guid value)
     {
         Model.SelectedSalesUserId = value;
+    }
+
+    private void OnCompletedChanged(bool value)
+    {
+        Model.IsCompleted = value;
     }
 }

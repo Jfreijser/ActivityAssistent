@@ -14,34 +14,34 @@
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
 	<MudGrid Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
 		<MudItem>
-			<MudText Typo="Typo.h4" Color="Color.Primary">Teamactiepunten</MudText>
+			<MudText Typo="Typo.h4" Color="Color.Primary">Team action points</MudText>
 			<MudText Typo="Typo.body2" Color="Color.Secondary">
-				Overzicht van taken en statussen van het team.
+				Overview of the team's tasks and statuses.
 			</MudText>
 		</MudItem>
 		<MudItem>
 			<MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.ArrowBack" OnClick="NavigateBack">
-				Terug naar gesprekken
+				Back to conversations
 			</MudButton>
 		</MudItem>
 	</MudGrid>
 
 	<MudPaper Elevation="2" Class="pa-4 mb-6">
-		<MudText Typo="Typo.subtitle1">@FormTitle</MudText>
+			<MudText Typo="Typo.subtitle1">@FormTitle</MudText>
 		<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-			Maak of bewerk een teamactiepunt.
+				Create or edit a team action point.
 		</MudText>
 
 		<MudForm @ref="Form" @bind-IsValid="IsFormValid">
 			<MudGrid Spacing="3">
 				<MudItem xs="12">
 					<MudSelect T="Guid"
-							   Label="Gesprek"
-							   Required="true"
-							   RequiredError="Selecteer een gesprek"
+					Label="Conversation"
+					Required="true"
+					RequiredError="Select a conversation"
 							   Variant="Variant.Outlined"
 							   @bind-Value="SelectedConversationId">
-						<MudSelectItem Value="@(Guid.Empty)">-- Selecteer een gesprek --</MudSelectItem>
+					<MudSelectItem Value="@(Guid.Empty)">-- Select a conversation --</MudSelectItem>
 						@foreach (var conversation in Conversations)
 						{
 							<MudSelectItem Value="@conversation.ConversationId">@conversation.Title</MudSelectItem>
@@ -50,26 +50,26 @@
 				</MudItem>
 				<MudItem xs="12">
 					<MudTextField T="string"
-								Label="Omschrijving"
-								Required="true"
-								RequiredError="Omschrijving is verplicht"
+					Label="Description"
+					Required="true"
+					RequiredError="Description is required"
 								Variant="Variant.Outlined"
 								@bind-Value="Description" />
 				</MudItem>
 				<MudItem xs="12" sm="6">
-					<MudDatePicker Label="Vervaldatum"
+					<MudDatePicker Label="Due date"
 								   @bind-Date="DueDate"
 								   Variant="Variant.Outlined"
 								   Editable="true" />
 				</MudItem>
 				<MudItem xs="12" sm="6">
 					<MudSelect T="Guid"
-							   Label="Toewijzen aan"
-							   Required="true"
-							   RequiredError="Selecteer een medewerker"
+					Label="Assign to"
+					Required="true"
+					RequiredError="Select an employee"
 							   Variant="Variant.Outlined"
 							   @bind-Value="SelectedSalesUserId">
-						<MudSelectItem Value="@(Guid.Empty)">-- Selecteer een medewerker --</MudSelectItem>
+					<MudSelectItem Value="@(Guid.Empty)">-- Select an employee --</MudSelectItem>
 						@foreach (var user in DelegationUsers)
 						{
 							<MudSelectItem Value="@user.UserId">@user.FullName</MudSelectItem>
@@ -77,20 +77,20 @@
 					</MudSelect>
 				</MudItem>
 				<MudItem xs="12" sm="6" Class="d-flex align-center">
-					<MudCheckBox T="bool" Label="Voltooid" @bind-Checked="IsCompleted" />
+					<MudCheckBox T="bool" Label="Completed" @bind-Checked="IsCompleted" />
 				</MudItem>
 				<MudItem xs="12" Class="d-flex justify-end">
 					@if (IsEditMode)
 					{
 						<MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CancelEdit" Class="mr-2">
-							Annuleren
+						Cancel
 						</MudButton>
 					}
 					<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveActionPoint" Disabled="@(!IsFormValid || IsSaving)">
 						@if (IsSaving)
 						{
 							<MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-							<MudText Class="ms-2">Opslaan...</MudText>
+						<MudText Class="ms-2">Saving...</MudText>
 						}
 						else
 						{
@@ -107,31 +107,31 @@
 		{
 			<div class="d-flex justify-center align-center pa-12">
 				<MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
-				<MudText Class="ml-4">Actiepunten laden...</MudText>
+				<MudText Class="ml-4">Loading action points...</MudText>
 			</div>
 		}
 		else
 		{
 			<MudTable Items="ActionPointItems" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
 				<HeaderContent>
-					<MudTh>Gesprek</MudTh>
-					<MudTh>Omschrijving</MudTh>
-					<MudTh>Vervaldatum</MudTh>
+					<MudTh>Conversation</MudTh>
+					<MudTh>Description</MudTh>
+					<MudTh>Due date</MudTh>
 					<MudTh>Status</MudTh>
-					<MudTh>Medewerker</MudTh>
-					<MudTh Style="text-align: right;">Acties</MudTh>
+					<MudTh>Employee</MudTh>
+					<MudTh Style="text-align: right;">Actions</MudTh>
 				</HeaderContent>
 				<RowTemplate>
-					<MudTd DataLabel="Gesprek">@GetConversationTitle(context.ConversationId)</MudTd>
-					<MudTd DataLabel="Omschrijving">@context.Description</MudTd>
-					<MudTd DataLabel="Vervaldatum">@context.DueDate.ToString("dd-MM-yyyy")</MudTd>
+					<MudTd DataLabel="Conversation">@GetConversationTitle(context.ConversationId)</MudTd>
+					<MudTd DataLabel="Description">@context.Description</MudTd>
+					<MudTd DataLabel="Due date">@context.DueDate.ToString("dd-MM-yyyy")</MudTd>
 					<MudTd DataLabel="Status">
 						<MudChip T="string" Color="@(context.IsCompleted ? Color.Success : Color.Warning)" Size="Size.Small">
-							@(context.IsCompleted ? "Voltooid" : "Open")
+							@(context.IsCompleted ? "Completed" : "Open")
 						</MudChip>
 					</MudTd>
-					<MudTd DataLabel="Medewerker">@GetUserName(context.SalesUserId)</MudTd>
-					<MudTd DataLabel="Acties" Style="text-align: right;">
+					<MudTd DataLabel="Employee">@GetUserName(context.SalesUserId)</MudTd>
+					<MudTd DataLabel="Actions" Style="text-align: right;">
 						<MudIconButton Icon="@Icons.Material.Filled.Done"
 									 Color="Color.Success"
 									 Size="Size.Small"

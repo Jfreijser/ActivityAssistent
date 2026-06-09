@@ -15,5 +15,10 @@ namespace ActivityAssistent.App.Interfaces.ActionPoint
         Task<List<ActionPointDto>> GetActiveActionPointsAsync(string UserId, CancellationToken Token);
         Task<List<ActionPointDto>> GetByConversationIdAsync(Guid ConversationId, CancellationToken Token);
         Task<List<UserProfileDto>> GetDelegationUsersAsync(CancellationToken Token);
+        Task<ActionPointResolutionsDto> ResolveActionPointAsync(CreateActionPointResolutionDto Resolution, CancellationToken Token);
+
+        // 2. Het ophalen van de afsluit-historie voor een specifiek actiepunt (als je dit later in de UI wilt tonen)
+
+        Task<List<ActionPointResolutionsDto>> GetActionPointResolutionsAsync(Guid ActionPointId, CancellationToken Token);
     }
 }
