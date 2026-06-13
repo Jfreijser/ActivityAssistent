@@ -48,20 +48,23 @@
 					<MudTh Style="text-align: right;">Actions</MudTh>
 				</HeaderContent>
 				<RowTemplate>
-					<MudTd DataLabel="Description">@context.Description</MudTd>
-					<MudTd DataLabel="Due date">@context.DueDate.ToString("dd-MM-yyyy")</MudTd>
+					<MudTd DataLabel="Description" Style="@(context.IsCompleted ? "opacity: 0.6;" : "")">
+						<span style="@(context.IsCompleted ? "text-decoration: line-through;" : "")">@context.Description</span>
+					</MudTd>
+					<MudTd DataLabel="Due date" Style="@(context.IsCompleted ? "opacity: 0.6;" : "")">@context.DueDate.ToString("dd-MM-yyyy")</MudTd>
 					<MudTd DataLabel="Status">
-						<MudChip T="string" Color="@(context.IsCompleted ? Color.Success : Color.Warning)" Size="Size.Small">
+						<MudChip T="string" Color="@(context.IsCompleted ? Color.Success : Color.Warning)" Size="Size.Small" Icon="@(context.IsCompleted ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Schedule)">
 							@(context.IsCompleted ? "Completed" : "Open")
 						</MudChip>
 					</MudTd>
-					<MudTd DataLabel="Employee">@GetUserName(context.SalesUserId)</MudTd>
+					<MudTd DataLabel="Employee" Style="@(context.IsCompleted ? "opacity: 0.6;" : "")">@GetUserName(context.SalesUserId)</MudTd>
 					<MudTd DataLabel="Actions" Style="text-align: right;">
 						<MudIconButton Icon="@Icons.Material.Filled.Done"
 									   Color="Color.Success"
 									   Size="Size.Small"
 									   Title="Resolve"
-									   OnClick="() => OpenResolveDialog(context)" />
+									   Disabled="@context.IsCompleted"
+									   OnClick="() => ResolveActionPointDirectAsync(context)" />
 						<MudIconButton Icon="@Icons.Material.Filled.History"
 									   Color="Color.Info"
 									   Size="Size.Small"
@@ -216,6 +219,10 @@
 
 			if (existingActionPointId.HasValue)
 			{
+				// Check if action point was marked as completed (transition from false to true)
+				var existingActionPoint = ActionPointItems.FirstOrDefault(x => x.ActionPointId == existingActionPointId.Value);
+				var wasMarkedAsCompleted = model.IsCompleted && existingActionPoint != null && !existingActionPoint.IsCompleted;
+
 				var updateDto = new UpdateActionPointDto
 				{
 					ActionPointId = existingActionPointId.Value,
@@ -231,8 +238,18 @@
 				if (updated.ActionPointId != Guid.Empty)
 				{
 					await LoadActionPointsAsync();
+					Snackbar.Add("Action point updated.", Severity.Success);
+
+					// If marked as completed, open the resolve dialog
+					if (wasMarkedAsCompleted)
+					{
+						var actionPointToResolve = ActionPointItems.FirstOrDefault(x => x.ActionPointId == existingActionPointId.Value);
+						if (actionPointToResolve != null)
+						{
+							await ResolveActionPointDirectAsync(actionPointToResolve);
+						}
+					}
 				}
-				Snackbar.Add("Action point updated.", Severity.Success);
 			}
 			else
 			{
@@ -261,41 +278,6 @@
 		}
 	}
 
-	private async Task OpenResolveDialog(ActionPointDto actionPoint)
-	{
-		var parameters = new DialogParameters
-		{
-			["Model"] = new CreateActionPointResolutionDto { ActionPointId = actionPoint.ActionPointId }
-		};
-
-		var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-		var dialog = await DialogService.ShowAsync<ActionPointResolutionDialog>("Resolve action point", parameters, options);
-		var result = await dialog.Result;
-
-		if (result.Canceled || result.Data is not CreateActionPointResolutionDto resolution)
-		{
-			return;
-		}
-
-		try
-		{
-			var created = await ActionPointService.ResolveActionPointAsync(resolution, TokenSource.Token);
-			if (created.ResolutionId != Guid.Empty)
-			{
-				await LoadActionPointsAsync();
-				Snackbar.Add("Action point resolved.", Severity.Success);
-			}
-			else
-			{
-				Snackbar.Add("Action point could not be resolved.", Severity.Warning);
-			}
-		}
-		catch (Exception ex)
-		{
-			Console.WriteLine($"Error while resolving action point: {ex.Message}");
-			Snackbar.Add("Error while resolving action point.", Severity.Error);
-		}
-	}
 
 	private async Task OpenHistoryDialog(ActionPointDto actionPoint)
 	{
@@ -345,6 +327,42 @@
 	{
 		var user = DelegationUsers.FirstOrDefault(x => x.UserId == userId);
 		return user?.FullName ?? userId.ToString();
+	}
+
+	private async Task ResolveActionPointDirectAsync(ActionPointDto actionPoint)
+	{
+		var parameters = new DialogParameters
+		{
+			["Model"] = new CreateActionPointResolutionDto { ActionPointId = actionPoint.ActionPointId }
+		};
+
+		var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+		var dialog = await DialogService.ShowAsync<ActionPointResolutionDialog>("Resolve action point", parameters, options);
+		var result = await dialog.Result;
+
+		if (result.Canceled || result.Data is not CreateActionPointResolutionDto resolution)
+		{
+			return;
+		}
+
+		try
+		{
+			var created = await ActionPointService.ResolveActionPointAsync(resolution, TokenSource.Token);
+			if (created.ResolutionId != Guid.Empty)
+			{
+				await LoadActionPointsAsync();
+				Snackbar.Add("Action point resolved.", Severity.Success);
+			}
+			else
+			{
+				Snackbar.Add("Action point could not be resolved.", Severity.Warning);
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Error while resolving action point: {ex.Message}");
+			Snackbar.Add("Error while resolving action point.", Severity.Error);
+		}
 	}
 
 	public void Dispose()

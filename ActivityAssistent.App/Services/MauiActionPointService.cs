@@ -97,18 +97,23 @@ namespace ActivityAssistent.App.Services
         {
             try
             {
-                var response = await GetAsync<ApiResponse<List<ActionPointDto>>>($"api/ActionPoint/GetActiveByUser/{UserId}", Token);
-
-                if (!response.IsSuccess)
+                if (string.IsNullOrWhiteSpace(UserId))
                 {
-                    throw new HttpRequestException($"Error fetching action points: {response.ErrorMessage}");
+                    return new List<ActionPointDto>();
                 }
 
-                return response.Data;
+                var response = await GetAsync<ApiResponse<List<ActionPointDto>>>($"api/ActionPoint/GetActiveByUser/{UserId}", Token);
+
+                if (response == null || !response.IsSuccess)
+                {
+                    return new List<ActionPointDto>();
+                }
+
+                return response.Data ?? new List<ActionPointDto>();
             }
             catch (Exception)
             {
-                throw new Exception("Failed to fetch action points.");
+                return new List<ActionPointDto>();
             }
         }
 

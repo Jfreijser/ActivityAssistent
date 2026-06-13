@@ -62,13 +62,14 @@ namespace ActivityAssistent.Api.Infrastructure.Repositories.DapperRepository
 
         public async Task<List<CompanyOverviewDto>> GetCompanyOverviewAsync(Guid SalesUserId, CancellationToken Token)
         {
-            string sql = @"SELECT Com.CompanyId, Com.Name AS CompanyName, COUNT(Con.ConversationId) AS TotalConversations, MAX(Con.MeetingDate) AS LastContactDate FROM Companies AS Com
-                        LEFT JOIN Conversations AS Con ON Com.CompanyId = Con.CompanyId AND Con.SalesUserId = @SalesUserId
-                        GROUP BY 
-                            Com.CompanyId, 
-                            Com.Name
-                        ORDER BY 
-                            MAX(Con.MeetingDate) DESC";
+            string sql = @"SELECT Com.CompanyId, Com.Name AS CompanyName, COUNT(Con.ConversationId) AS TotalConversations, MAX(Con.MeetingDate) AS LastContactDate 
+                            FROM Companies AS Com
+                            LEFT JOIN Conversations AS Con 
+                                ON Com.CompanyId = Con.CompanyId AND Con.SalesUserId = @SalesUserId
+                            WHERE Com.OwnerUserId = @SalesUserId OR Com.OwnerUserId IS NULL
+                            GROUP BY Com.CompanyId, Com.Name
+                            ORDER BY MAX(Con.MeetingDate) DESC;";
+
             var command = new CommandDefinition(sql, new { SalesUserId}, cancellationToken: Token);
             using (var conn = connection.CreateConnection())
             {
