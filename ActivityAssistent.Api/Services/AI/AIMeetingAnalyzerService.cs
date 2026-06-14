@@ -12,11 +12,6 @@ namespace ActivityAssistent.Api.Services.AI
 {
     public class AIMeetingAnalyzerService(ISpeechRecognitionService SpeechRecognitionService, IAiAssistantService AiActionPointService, IAiStatusRepository AiStatusRepository, IUserContext UserContext, IActionPointRepository ActionPointRepository) : IAiMeetingAnalyzerService
     {
-        public Task<bool> CancelAiAnalysisAsync(Guid Token)
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task<IReadOnlyList<AiAnalysisStateRecord>> GetAnalysisStateByConversationIdAsync(Guid ConversationId, CancellationToken CancelToken)
         {
             var result = await AiStatusRepository.GetAnalysisStateByConversationIdAsync(ConversationId, CancelToken);
