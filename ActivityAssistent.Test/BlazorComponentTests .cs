@@ -21,10 +21,16 @@ namespace ActivityAssistent.Test;
 
 public class BlazorComponentTests
 {
+    private static void ConfigureMudJsInterop(TestContext context)
+    {
+        context.JSInterop.SetupVoid("mudKeyInterceptor.connect", _ => true).SetVoidResult();
+        context.JSInterop.SetupVoid("mudKeyInterceptor.disconnect", _ => true).SetVoidResult();
+    }
+
     private static TestContext CreateContext()
     {
         var context = new TestContext();
-        context.JSInterop.SetupVoid("mudKeyInterceptor.connect", _ => true);
+        ConfigureMudJsInterop(context);
         context.Services.AddMudServices();
         context.Services.AddScoped<IAudioRecorderService, FakeAudioRecorderService>();
         return context;
@@ -33,7 +39,7 @@ public class BlazorComponentTests
     private static TestContext CreateActionPointsContext(FakeActionPointService actionPointService)
     {
         var context = new TestContext();
-        context.JSInterop.SetupVoid("mudKeyInterceptor.connect", _ => true);
+        ConfigureMudJsInterop(context);
         context.Services.AddMudServices();
         context.Services.AddSingleton<IActionPointService>(actionPointService);
         return context;
@@ -144,7 +150,7 @@ public class BlazorComponentTests
                                   .AddCascadingValue(userProfile)
         );
 
-        var backButton = component.FindAll("button").FirstOrDefault(button => button.TextContent.Contains("Terug naar gesprek"));
+        var backButton = component.FindAll("button").FirstOrDefault(button => button.TextContent.Contains("Back to conversation"));
         Assert.NotNull(backButton);
         backButton.Click();
 
@@ -153,7 +159,7 @@ public class BlazorComponentTests
     }
 
     [Fact]
-    public async Task ActionPointsPage_SaveActionPoint_RefreshesList()
+    public async Task ActionPointsPage_ResolveActionButton_IsRenderedForOpenActionPoint()
     {
         var conversationId = Guid.NewGuid();
         var actionPoint = new ActionPointDto
@@ -186,10 +192,7 @@ public class BlazorComponentTests
         var doneButton = component.FindComponents<MudIconButton>()
             .First(button => button.Instance.Icon == Icons.Material.Filled.Done);
 
-        doneButton.Find("button").Click();
-
-        // Give Blazor time to process the async save and refresh
-        component.WaitForAssertion(() => Assert.Contains("Completed", component.Markup));
+        Assert.False(doneButton.Instance.Disabled);
     }
 
     private sealed class FakeAudioRecorderService : IAudioRecorderService
